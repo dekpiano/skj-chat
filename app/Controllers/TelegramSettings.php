@@ -32,13 +32,21 @@ class TelegramSettings extends BaseController
         $status = $this->request->getPost('telegram_status') === 'on' ? 'on' : 'off';
 
         $tgModel = new TelegramConfigModel();
-        $tgModel->update(1, [
+        $exists  = $tgModel->find(1);
+        $data = [
             'telegram_bot_token'  => $token,
             'telegram_chat_id'    => $chatId,
             'telegram_chat_title' => $title,
             'telegram_status'     => $status,
             'updated_at'          => date('Y-m-d H:i:s'),
-        ]);
+        ];
+
+        if ($exists) {
+            $tgModel->update(1, $data);
+        } else {
+            $data['telegram_id'] = 1;
+            $tgModel->insert($data);
+        }
 
         return $this->response->setJSON([
             'status'  => 'success',
@@ -64,10 +72,23 @@ class TelegramSettings extends BaseController
         $chatId   = $tgConfig->telegram_chat_id;
         $timeStr  = date('d/m/Y H:i:s');
 
-        $text = "🔔 *ทดสอบการแจ้งเตือน SKJ Live Chat*\n"
-              . "📅 เวลา: {$timeStr}\n"
-              . "👤 ผู้ทดสอบ: {$this->currentAgent->fullname}\n"
-              . "✅ ระบบเชื่อมต่อ Telegram Bot สำเร็จพร้อมใช้งาน!";
+        $deskUrl = base_url('chat/desk');
+        $text = "🔔 *ทดสอบการแจ้งเตือน SKJ Live Chat*\n\n"
+              . "📅 *เวลา:* {$timeStr}\n"
+              . "👤 *ผู้ทดสอบ:* {$this->currentAgent->fullname}\n"
+              . "✅ ระบบเชื่อมต่อ Telegram Bot สำเร็จพร้อมใช้งาน!\n\n"
+              . "👉 [คลิกเพื่อเปิดหน้าจอ Live Chat Desk ตอบกลับ]({$deskUrl})";
+
+        $inlineKeyboard = [
+            'inline_keyboard' => [
+                [
+                    [
+                        'text' => '💬 เปิดระบบ Live Chat Desk',
+                        'url'  => $deskUrl
+                    ]
+                ]
+            ]
+        ];
 
         $url = "https://api.telegram.org/bot{$botToken}/sendMessage";
         $client = \Config\Services::curlrequest();
@@ -75,9 +96,10 @@ class TelegramSettings extends BaseController
         try {
             $res = $client->post($url, [
                 'form_params' => [
-                    'chat_id'    => $chatId,
-                    'text'       => $text,
-                    'parse_mode' => 'Markdown'
+                    'chat_id'      => $chatId,
+                    'text'         => $text,
+                    'parse_mode'   => 'Markdown',
+                    'reply_markup' => json_encode($inlineKeyboard)
                 ],
                 'http_errors' => false,
                 'timeout'     => 10

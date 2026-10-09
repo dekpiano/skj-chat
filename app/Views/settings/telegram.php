@@ -50,10 +50,10 @@
                     </div>
 
                     <div class="alert alert-info-subtle border-0 rounded-3 small p-3 mb-4 d-flex align-items-start gap-2" style="font-size: 0.82rem; background: #e0f2fe; color: #0369a1;">
-                        <i class="fa-solid fa-laptop-code mt-1 flex-shrink-0"></i>
+                        <i class="fa-solid fa-bell mt-1 flex-shrink-0"></i>
                         <div>
-                            <strong>โหมดพัฒนา / ทดสอบในเครื่อง (Localhost):</strong>
-                            ระบบจะไม่ส่งการแจ้งเตือนอัตโนมัติเมื่อทดสอบบน <code>localhost</code> หรือ <code>127.0.0.1</code> เพื่อป้องกันการรบกวนกลุ่มงานจริง แต่ท่านสามารถกดปุ่ม <strong>"ทดสอบการแจ้งเตือน Telegram"</strong> ด้านบนเพื่อตรวจสอบการเชื่อมต่อ Bot Token ได้ตลอดเวลา
+                            <strong>การทำงานของการแจ้งเตือน:</strong>
+                            เมื่อเปิดใช้งาน ระบบจะส่งข้อความแจ้งเตือนพร้อมปุ่มและลิงก์เปิดห้องแชทในระบบ Admin ไปยังกลุ่ม Telegram ทุกครั้งที่มีผู้ใช้ใหม่เริ่มแชท หรือมีข้อความใหม่จากผู้ติดต่อเข้ามา
                         </div>
                     </div>
 

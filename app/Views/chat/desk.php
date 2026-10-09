@@ -142,41 +142,54 @@
         background: #f8fafc;
         border-right: 1px solid #e2e8f0;
         min-width: 0;
+        position: relative;
     }
 
     .chat-header {
-        height: 64px;
+        height: 68px;
         background: #ffffff;
         border-bottom: 1px solid #e2e8f0;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 1.25rem;
+        padding: 0 1.5rem;
         gap: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+        z-index: 10;
     }
 
     .chat-header-actions .btn {
-        height: 34px;
-        border-radius: 20px;
-        font-size: 0.8rem;
+        height: 36px;
+        border-radius: 12px;
+        font-size: 0.82rem;
+        font-weight: 500;
         white-space: nowrap;
-        padding: 0 12px;
+        padding: 0 14px;
         flex-shrink: 0;
+        transition: all 0.2s ease;
     }
 
     .chat-messages {
         flex: 1;
         overflow-y: auto;
-        padding: 1.25rem;
+        padding: 1.5rem;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 16px;
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
     }
 
     .chat-bubble-row {
         display: flex;
-        gap: 10px;
-        max-width: 85%;
+        gap: 12px;
+        max-width: 84%;
+        align-items: flex-start;
+        animation: fadeInMsg 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeInMsg {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     .chat-bubble-row.user {
@@ -192,107 +205,208 @@
         align-self: center;
         max-width: 90%;
         text-align: center;
+        margin: 4px 0;
     }
 
     .bubble-avatar {
-        width: 34px;
-        height: 34px;
+        width: 38px;
+        height: 38px;
         aspect-ratio: 1 / 1;
         border-radius: 50%;
         flex-shrink: 0;
         object-fit: cover;
+        border: 2px solid #ffffff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .bubble-wrapper {
+        min-width: 0;
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-bubble-row.admin .bubble-wrapper {
+        align-items: flex-end;
+    }
+
+    .bubble-sender-name {
+        font-size: 0.78rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 4px;
+    }
+
+    .chat-bubble-row.user .bubble-sender-name {
+        color: #1976d2;
+    }
+
+    .chat-bubble-row.admin .bubble-sender-name {
+        color: #c2185b;
+        justify-content: flex-end;
     }
 
     .bubble-content {
-        padding: 0.75rem 1rem;
-        border-radius: 16px;
-        font-size: 0.92rem;
+        padding: 0.85rem 1.15rem;
+        border-radius: 18px;
+        font-size: 0.94rem;
         line-height: 1.65;
         position: relative;
         overflow-wrap: anywhere;
         word-break: break-word;
         max-width: 100%;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+        letter-spacing: 0.01em;
     }
 
+    .msg-list-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        margin: 2px 0;
+        line-height: 1.6;
+    }
+
+    .msg-bullet {
+        color: var(--skj-pink);
+        font-weight: 700;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        flex-shrink: 0;
+    }
+
+    .chat-bubble-row.admin:not(.bot) .msg-bullet {
+        color: #ffffff;
+    }
+
+    /* Visitor (User) Bubble */
     .chat-bubble-row.user .bubble-content {
         background: #ffffff;
-        color: #1e293b;
+        color: #0f172a;
         border: 1px solid #e2e8f0;
         border-top-left-radius: 4px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
     }
 
+    /* Staff Human Agent Bubble */
     .chat-bubble-row.admin .bubble-content {
-        background: linear-gradient(135deg, var(--skj-pink) 0%, #d81b60 100%);
+        background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
         color: #ffffff;
         border-top-right-radius: 4px;
-        box-shadow: 0 4px 12px rgba(233, 30, 99, 0.2);
+        box-shadow: 0 4px 16px rgba(233, 30, 99, 0.22);
+    }
+
+    .chat-bubble-row.admin .bubble-content a.msg-link-badge {
+        background: rgba(255, 255, 255, 0.22);
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        text-decoration: none;
+    }
+
+    .chat-bubble-row.admin .bubble-content a.msg-tel-badge {
+        background: #ffffff;
+        color: #c2185b !important;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    /* AI Assistant (น้องกุหลาบ) Bubble */
+    .chat-bubble-row.admin.bot {
+        align-self: flex-start;
+        flex-direction: row;
+    }
+
+    .chat-bubble-row.admin.bot .bubble-wrapper {
+        align-items: flex-start;
+    }
+
+    .chat-bubble-row.admin.bot .bubble-sender-name {
+        color: #0f172a;
+        justify-content: flex-start;
     }
 
     .chat-bubble-row.admin.bot .bubble-content {
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
+        background: #ffffff;
+        color: #0f172a;
+        border: 1.5px solid #e2e8f0;
+        border-left: 4px solid var(--skj-pink);
+        border-top-left-radius: 4px;
+        border-top-right-radius: 18px;
+        box-shadow: 0 4px 18px rgba(233, 30, 99, 0.06);
     }
 
+    /* System Notice */
     .chat-bubble-row.system .bubble-content {
-        background: #f1f5f9;
+        background: #e2e8f0;
         color: #475569;
-        font-size: 0.82rem;
+        font-size: 0.78rem;
+        font-weight: 500;
         border-radius: 20px;
-        padding: 6px 16px;
+        padding: 5px 16px;
+        box-shadow: none;
+        border: none;
     }
 
     .bubble-meta {
-        font-size: 0.7rem;
+        font-size: 0.72rem;
         margin-top: 4px;
         color: #94a3b8;
+        padding: 0 4px;
+        font-family: 'Inter', sans-serif;
     }
 
     .chat-bubble-row.admin .bubble-meta {
-        color: rgba(255, 255, 255, 0.8);
         text-align: right;
     }
 
     .bubble-attachment-img {
-        max-width: 280px;
-        max-height: 220px;
+        max-width: 320px;
+        max-height: 240px;
         width: auto;
         height: auto;
-        aspect-ratio: auto;
-        object-fit: cover;
         border-radius: 12px;
         margin-top: 8px;
         cursor: pointer;
         display: block;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        transition: transform 0.2s ease;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid rgba(0, 0, 0, 0.06);
     }
     .bubble-attachment-img:hover {
         transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
     }
 
     .bubble-attachment-file {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 8px 12px;
-        background: rgba(0, 0, 0, 0.05);
+        padding: 8px 14px;
+        background: rgba(0, 0, 0, 0.06);
         border-radius: 10px;
         margin-top: 8px;
         text-decoration: none;
         color: inherit;
-        font-size: 0.84rem;
+        font-size: 0.85rem;
+        font-weight: 500;
         max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        transition: background 0.15s ease;
+    }
+    .bubble-attachment-file:hover {
+        background: rgba(0, 0, 0, 0.1);
     }
 
     /* Chat Footer & Input */
     .chat-footer {
         background: #ffffff;
         border-top: 1px solid #e2e8f0;
-        padding: 0.85rem 1.25rem;
+        padding: 1rem 1.5rem;
+        position: relative;
     }
 
     .chat-input-bar {
@@ -300,16 +414,16 @@
         align-items: flex-end;
         gap: 8px;
         background: #f8fafc;
-        border: 1px solid #cbd5e1;
-        border-radius: 20px;
-        padding: 6px 12px;
-        transition: all 0.2s;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 8px 12px;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .chat-input-bar:focus-within {
         border-color: var(--skj-pink);
         background: #ffffff;
-        box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.12);
+        box-shadow: 0 0 0 4px rgba(233, 30, 99, 0.12);
     }
 
     .chat-textarea {
@@ -319,10 +433,67 @@
         outline: none;
         resize: none;
         font-family: inherit;
-        font-size: 0.92rem;
-        max-height: 120px;
-        line-height: 1.4;
-        padding: 6px 0;
+        font-size: 0.94rem;
+        max-height: 140px;
+        min-height: 38px;
+        line-height: 1.6;
+        padding: 6px 4px;
+        color: #0f172a;
+    }
+
+    .chat-textarea::placeholder {
+        color: #94a3b8;
+    }
+
+    .chat-action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        flex-shrink: 0;
+        margin-bottom: 2px;
+    }
+
+    .chat-action-btn:hover {
+        background: #f1f5f9;
+        color: var(--skj-pink);
+        transform: translateY(-1px);
+    }
+
+    .chat-action-btn:active {
+        transform: scale(0.95);
+    }
+
+    .chat-send-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: linear-gradient(135deg, var(--skj-pink) 0%, #c2185b 100%);
+        color: #ffffff;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(233, 30, 99, 0.25);
+        transition: all 0.15s ease;
+        flex-shrink: 0;
+    }
+
+    .chat-send-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(233, 30, 99, 0.35);
+    }
+
+    .chat-send-btn:active {
+        transform: scale(0.94);
     }
 
     .pulse-unread {
@@ -332,10 +503,6 @@
         0% { transform: scale(1); }
         50% { transform: scale(1.18); box-shadow: 0 0 10px rgba(239, 68, 68, 0.55); }
         100% { transform: scale(1); }
-    }
-
-    .chat-footer {
-        position: relative;
     }
 
     .canned-autocomplete {
@@ -584,22 +751,22 @@
 
                 <div class="chat-input-bar">
                     <input type="file" id="chatFileInput" class="d-none" onchange="handleFileUpload(this)">
-                    <button type="button" class="btn btn-sm btn-light text-muted btn-icon-sm rounded-circle" onclick="document.getElementById('chatFileInput').click()" title="แนบรูปภาพหรือไฟล์">
-                        <i class="fa-solid fa-paperclip"></i>
+                    <button type="button" class="chat-action-btn" onclick="document.getElementById('chatFileInput').click()" title="แนบรูปภาพหรือไฟล์">
+                        <i class="fa-solid fa-paperclip fs-6"></i>
                     </button>
                     
-                    <button type="button" class="btn btn-sm btn-light text-muted btn-icon-sm rounded-circle" onclick="openCannedModal()" title="คลังคำตอบด่วน (/)">
-                        <i class="fa-solid fa-bolt"></i>
+                    <button type="button" class="chat-action-btn" onclick="openCannedModal()" title="คลังคำตอบด่วน (/)">
+                        <i class="fa-solid fa-bolt fs-6"></i>
                     </button>
 
-                    <button type="button" class="btn btn-sm btn-light text-primary btn-icon-sm rounded-circle" onclick="triggerCurrentAi()" title="สั่งให้น้องกุหลาบ AI ตอบคำถามล่าสุด">
-                        <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--skj-pink);"></i>
+                    <button type="button" class="chat-action-btn" onclick="triggerCurrentAi()" title="สั่งให้น้องกุหลาบ AI ตอบคำถามล่าสุด">
+                        <i class="fa-solid fa-wand-magic-sparkles fs-6" style="color: var(--skj-pink);"></i>
                     </button>
 
-                    <textarea id="chatInputMessage" class="chat-textarea" placeholder="พิมพ์ข้อความตอบกลับ (กด / เพื่อเลือกข้อความด่วน, Enter ส่ง, Shift+Enter ขึ้นบรรทัด)..." rows="1"></textarea>
+                    <textarea id="chatInputMessage" class="chat-textarea" placeholder="พิมพ์ข้อความตอบกลับ (กด / เพื่อเลือกข้อความด่วน, Enter ส่ง, Shift+Enter ขึ้นบรรทัดใหม่)..." rows="1"></textarea>
 
-                    <button type="button" class="btn btn-sm btn-primary rounded-circle btn-icon-md" style="background: var(--skj-pink); border-color: var(--skj-pink);" onclick="sendAgentMessage()" title="ส่งข้อความ">
-                        <i class="fa-solid fa-paper-plane"></i>
+                    <button type="button" class="chat-send-btn" onclick="sendAgentMessage()" title="ส่งข้อความ (Enter)">
+                        <i class="fa-solid fa-paper-plane fs-6"></i>
                     </button>
                 </div>
             </div>
@@ -702,6 +869,7 @@
 <?= $this->section('scripts') ?>
 <script>
     const cannedRepliesData = <?= json_encode($cannedReplies ?? []) ?>;
+    const initialSessionId  = <?= json_encode($targetSessionId ?? null) ?>;
     let currentFilter = 'active';
     let currentSessionId = null;
     let currentSessionData = null;
@@ -712,7 +880,11 @@
     let selectedAutoIndex = -1;
 
     document.addEventListener('DOMContentLoaded', () => {
-        loadQueue();
+        loadQueue().then(() => {
+            if (initialSessionId) {
+                selectSession(initialSessionId);
+            }
+        });
         pollingInterval = setInterval(loadQueue, 3000);
 
         const textarea = document.getElementById('chatInputMessage');
@@ -757,8 +929,11 @@
             }
         });
 
-        // Input listener for / canned reply shortcut
+        // Input listener for / canned reply shortcut and auto-resize
         textarea.addEventListener('input', () => {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 140) + 'px';
+
             const val = textarea.value;
             if (val.startsWith('/')) {
                 const query = val.substring(1).toLowerCase().trim();
@@ -873,7 +1048,7 @@
 
     function loadQueue() {
         const search = document.getElementById('queueSearchInput')?.value || '';
-        fetch(`${BASE_URL}/chat/queue?filter=${currentFilter}&search=${encodeURIComponent(search)}`)
+        return fetch(`${BASE_URL}/chat/queue?filter=${currentFilter}&search=${encodeURIComponent(search)}`)
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
@@ -1085,7 +1260,7 @@
         const rowClass = m.sender_type; // user, admin, system
         const isBot = (m.is_bot == 1);
         const botClass = isBot ? 'bot' : '';
-        const senderName = isBot ? 'น้องกุหลาบ (SKJ AI Assistant)' : (m.sender_name || (m.sender_type === 'user' ? 'ผู้ใช้งาน' : 'เจ้าหน้าที่'));
+        const senderName = isBot ? 'น้องกุหลาบ AI' : (m.sender_name || (m.sender_type === 'user' ? 'ผู้ใช้งาน' : 'เจ้าหน้าที่'));
 
         let avatar = (m.sender_type === 'admin') 
             ? (m.agent_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.sender_name || 'Agent')}&background=fce4ec&color=c2185b`) 
@@ -1100,28 +1275,48 @@
             if (m.attachment_type === 'image' || m.attachment_url.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
                 attachmentHtml = `<a href="${m.attachment_url}" target="_blank"><img src="${m.attachment_url}" class="bubble-attachment-img" alt="attachment" onerror="this.onerror=null;this.parentNode.innerHTML='<span class=\\'text-danger small\\'>[รูปภาพไม่สามารถแสดงได้]</span>';"></a>`;
             } else {
-                attachmentHtml = `<a href="${m.attachment_url}" target="_blank" class="bubble-attachment-file"><i class="fa-solid fa-file-arrow-down"></i> ดาวน์โหลดไฟล์แนบ</a>`;
+                attachmentHtml = `<a href="${m.attachment_url}" target="_blank" class="bubble-attachment-file"><i class="fa-solid fa-file-arrow-down text-primary"></i> <span>ดาวน์โหลดไฟล์แนบ</span></a>`;
             }
         }
 
         const div = document.createElement('div');
         if (m.sender_type === 'system' && !m.is_bot) {
             div.className = 'chat-bubble-row system';
-            div.innerHTML = `<div class="bubble-content">${escapeHtml(m.message)}</div>`;
+            div.innerHTML = `<div class="bubble-content"><i class="fa-solid fa-circle-info me-1 text-muted"></i> ${escapeHtml(m.message)}</div>`;
         } else {
             div.className = `chat-bubble-row ${rowClass} ${botClass}`;
+            
+            let headerTag = '';
+            if (isBot) {
+                headerTag = `
+                    <div class="bubble-sender-name">
+                        <span class="badge" style="background: linear-gradient(135deg, #e91e63 0%, #1976d2 100%); color: #fff; font-size: 0.68rem; padding: 2px 8px; border-radius: 8px;">
+                            <i class="fa-solid fa-wand-magic-sparkles me-1"></i> น้องกุหลาบ AI (ระบบอัตโนมัติ)
+                        </span>
+                    </div>`;
+            } else if (m.sender_type === 'admin') {
+                headerTag = `
+                    <div class="bubble-sender-name">
+                        <span>${escapeHtml(senderName)}</span>
+                        <span class="badge bg-danger-subtle text-danger" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 6px;">เจ้าหน้าที่</span>
+                    </div>`;
+            } else {
+                headerTag = `
+                    <div class="bubble-sender-name">
+                        <span>${escapeHtml(senderName)}</span>
+                        <span class="badge bg-primary-subtle text-primary" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 6px;">ผู้ติดต่อ</span>
+                    </div>`;
+            }
+
             div.innerHTML = `
-                <img src="${avatar}" class="bubble-avatar avatar-img" alt="Avatar" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=fce4ec&color=c2185b';">
-                <div style="min-width: 0; max-width: 100%;">
+                <img src="${avatar}" class="bubble-avatar" alt="Avatar" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=fce4ec&color=c2185b';">
+                <div class="bubble-wrapper">
+                    ${headerTag}
                     <div class="bubble-content">
-                        <div class="fw-semibold mb-1" style="font-size: 0.76rem; opacity: 0.88;">
-                            ${escapeHtml(senderName)}
-                            ${isBot ? '<span class="badge bg-light text-primary ms-1" style="font-size:0.65rem;">AI</span>' : ''}
-                        </div>
                         <div>${parseDeskMarkdown(m.message || '')}</div>
                         ${attachmentHtml}
                     </div>
-                    <div class="bubble-meta">${formatTime(m.created_at)}</div>
+                    <div class="bubble-meta"><i class="fa-regular fa-clock me-1" style="font-size: 0.68rem;"></i>${formatTime(m.created_at)}</div>
                 </div>
             `;
         }
@@ -1132,32 +1327,36 @@
         }
     }
 
-    // Markdown Parser for Chat Desk
+    // Markdown Parser for Chat Desk (Natural reading typography, compact line breaks)
     function parseDeskMarkdown(text) {
         if (!text) return '';
-        let escaped = escapeHtml(text);
+        let escaped = escapeHtml(text.trim());
 
-        // Bold **text**
+        // 1. Collapse 2 or more consecutive blank lines into single clean break
+        escaped = escaped.replace(/\n{3,}/g, '\n\n');
+
+        // 2. Bold & Italic
         escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        // Italic *text*
         escaped = escaped.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
-        // Phone numbers (e.g. 056-009-667, 056-200-765, 08x-xxx-xxxx)
+        // 3. Standalone Phone numbers
         escaped = escaped.replace(/(^|[^0-9])((?:0[2-9]\d{1}-\d{3}-\d{3,4})|(?:0[2-9]\d{7,8})|(?:0[689]\d{1}-\d{3}-\d{4}))(?=$|[^0-9])/g, function(match, prefix, phone) {
             const clean = phone.replace(/[^0-9]/g, '');
-            return prefix + '<a href="tel:' + clean + '" class="badge bg-success-subtle text-success text-decoration-none px-2 py-1 flex-shrink-0" style="vertical-align: middle;"><i class="fa-solid fa-phone me-1"></i>' + phone + '</a>';
+            return prefix + '<a href="tel:' + clean + '" class="msg-tel-badge badge bg-success-subtle text-success text-decoration-none px-2 py-1 flex-shrink-0" style="vertical-align: middle;"><i class="fa-solid fa-phone me-1"></i>' + phone + '</a>';
         });
 
-        // Links [text](url)
-        escaped = escaped.replace(/\[(.*?)\]\((https?:\/\/[^\s\)]+|tel:[0-9]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="badge bg-primary-subtle text-primary text-decoration-none px-2 py-1 word-break-all text-truncate" style="max-width: 280px; vertical-align: middle;">$1 <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size:0.7em;"></i></a>');
+        // 4. Links [text](url)
+        escaped = escaped.replace(/\[(.*?)\]\((https?:\/\/[^\s\)]+|tel:[0-9]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="msg-link-badge badge bg-primary-subtle text-primary text-decoration-none px-2 py-1 word-break-all text-truncate" style="max-width: 280px; vertical-align: middle;">$1 <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size:0.7em;"></i></a>');
 
-        // Raw URLs
-        escaped = escaped.replace(/(^|[^"'>])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer" class="badge bg-primary-subtle text-primary text-decoration-none px-2 py-1 word-break-all text-truncate" style="max-width: 280px; vertical-align: middle;">$2 <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size:0.7em;"></i></a>');
+        // 5. Raw URLs
+        escaped = escaped.replace(/(^|[^"'>])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer" class="msg-link-badge badge bg-primary-subtle text-primary text-decoration-none px-2 py-1 word-break-all text-truncate" style="max-width: 280px; vertical-align: middle;">$2 <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size:0.7em;"></i></a>');
 
-        // Bullet lists
-        escaped = escaped.replace(/^[ \t]*[-*•][ \t]+(.*)$/gm, '<div class="d-flex align-items-start gap-2 my-1"><span class="text-danger small">•</span><div>$1</div></div>');
+        // 6. Bullet lists
+        escaped = escaped.replace(/^[ \t]*[-*•][ \t]+(.*)$/gm, '<div class="msg-list-item"><span class="msg-bullet">•</span><div>$1</div></div>');
 
-        // Newlines
+        // 7. Clean newlines: don't double break after div list items, collapse duplicate breaks
+        escaped = escaped.replace(/<\/div>\n/g, '</div>');
+        escaped = escaped.replace(/\n{2,}/g, '<br>');
         escaped = escaped.replace(/\n/g, '<br>');
 
         return escaped;
@@ -1201,6 +1400,7 @@
         }
 
         input.value = '';
+        input.style.height = 'auto';
         removeAttachment();
         hideCannedAutocomplete();
 

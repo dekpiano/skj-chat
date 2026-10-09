@@ -86,6 +86,9 @@ class WidgetApi extends BaseController
         $session = $this->db->table('tb_chat_sessions')->where('session_id', $sessionId)->get()->getRow();
         $messages = $this->db->table('tb_chat_messages')->where('session_id', $sessionId)->orderBy('created_at', 'ASC')->get()->getResult();
 
+        // Alert Telegram on new session initiation
+        $this->sendTelegramAlert($session, '✨ เริ่มต้นการติดต่อใหม่ผ่านวิดเจ็ตหน้าเว็บ', null);
+
         return $this->response->setJSON([
             'status'   => 'success',
             'session'  => $session,
@@ -232,44 +235,34 @@ class WidgetApi extends BaseController
                 return;
             }
 
-            // Strictly check if testing on localhost / private IP / development
-            $host   = strtolower($_SERVER['HTTP_HOST'] ?? parse_url(base_url(), PHP_URL_HOST) ?? '');
-            $server = strtolower($_SERVER['SERVER_NAME'] ?? '');
-            $origin = strtolower($this->request->getHeaderLine('Origin') ?: ($this->request->getHeaderLine('Referer') ?: ''));
-            $ip     = $this->request->getIPAddress();
+            $deskUrl = base_url('chat/desk?session=' . $session->session_id);
+            $msgPreview = $message ?: ($attachmentUrl ? '[แนบไฟล์/รูปภาพ]' : 'เริ่มต้นการสนทนาใหม่');
 
-            // Detect any local or private IP network (127.*, 172.16-31.*, 192.168.*, 10.*, localhost, .local, .test, port 8071)
-            $isLocal = str_contains($host, 'localhost')
-                    || str_contains($host, '127.0.0.1')
-                    || str_contains($host, ':8071')
-                    || str_contains($server, 'localhost')
-                    || str_contains($server, '127.0.0.1')
-                    || str_contains($origin, 'localhost')
-                    || str_contains($origin, '127.0.0.1')
-                    || in_array($ip, ['127.0.0.1', '::1', 'localhost'], true)
-                    || preg_match('/^(127\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|10\.)/', $ip)
-                    || (defined('ENVIRONMENT') && ENVIRONMENT === 'development');
-
-            if ($isLocal) {
-                // In localhost testing: NEVER send Telegram notifications
-                return;
-            }
-
-            $deskUrl = base_url('chat/desk?session=' . $session->session_token);
-            $msgPreview = $message ?: ($attachmentUrl ? '[แนบไฟล์/รูปภาพ]' : '');
-
-            $text = "💬 *มีข้อความใหม่จากผู้ใช้ (SKJ Live Chat)*\n\n"
-                  . "👤 *ชื่อ:* " . ($session->user_name ?: 'ไม่ระบุ') . "\n"
-                  . "📞 *เบอร์โทร:* " . ($session->user_tel ?: '-') . "\n"
-                  . "💬 *ข้อความ:* {$msgPreview}\n\n"
+            $text = "🔔 *มีข้อความใหม่จากผู้ใช้ (SKJ Live Chat)*\n\n"
+                  . "👤 *ชื่อผู้ติดต่อ:* " . ($session->user_name ?: 'ผู้ใช้งานทั่วไป') . "\n"
+                  . "📞 *เบอร์โทร:* " . ($session->user_tel ?: 'ไม่ได้ระบุ') . "\n"
+                  . "💬 *ข้อความ:* " . mb_substr($msgPreview, 0, 300) . "\n"
+                  . "⏰ *เวลา:* " . date('d/m/Y H:i:s') . "\n\n"
                   . "👉 [คลิกเพื่อเปิดหน้าจอ Live Chat Desk ตอบกลับ]({$deskUrl})";
+
+            $inlineKeyboard = [
+                'inline_keyboard' => [
+                    [
+                        [
+                            'text' => '💬 เปิดตอบกลับใน Live Chat Desk',
+                            'url'  => $deskUrl
+                        ]
+                    ]
+                ]
+            ];
 
             $client = \Config\Services::curlrequest();
             $client->post("https://api.telegram.org/bot{$tg->telegram_bot_token}/sendMessage", [
                 'form_params' => [
-                    'chat_id'    => $tg->telegram_chat_id,
-                    'text'       => $text,
-                    'parse_mode' => 'Markdown'
+                    'chat_id'      => $tg->telegram_chat_id,
+                    'text'         => $text,
+                    'parse_mode'   => 'Markdown',
+                    'reply_markup' => json_encode($inlineKeyboard)
                 ],
                 'http_errors' => false,
                 'timeout'     => 5

@@ -1456,8 +1456,8 @@
         // 5. Bullet lists (- or * or •)
         escaped = escaped.replace(/^[ \t]*[-*•][ \t]+(.*)$/gm, '<div class="skj-list-item"><span class="skj-list-bullet">🌸</span><div>$1</div></div>');
 
-        // 6. Normalize excessive blank lines (limit max consecutive newlines)
-        escaped = escaped.replace(/\n{3,}/g, '\n\n');
+        // 6. Normalize excessive blank lines (collapse multiple blank lines into single line break)
+        escaped = escaped.replace(/\n{2,}/g, '\n');
 
         // 7. Strip newlines touching block elements
         escaped = escaped.replace(/<\/div>\n+/g, '</div>');

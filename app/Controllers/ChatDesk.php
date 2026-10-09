@@ -23,13 +23,27 @@ class ChatDesk extends BaseController
 
         $aiConfig = $this->db->table('tb_chat_ai_config')->where('ai_id', 1)->get()->getRow();
 
+        $targetSession = $this->request->getGet('session') ?? ($this->request->getGet('session_id') ?? '');
+        $targetSessionId = null;
+        if (!empty($targetSession)) {
+            if (is_numeric($targetSession)) {
+                $targetSessionId = (int)$targetSession;
+            } else {
+                $sRow = $this->db->table('tb_chat_sessions')->where('session_token', $targetSession)->get()->getRow();
+                if ($sRow) {
+                    $targetSessionId = (int)$sRow->session_id;
+                }
+            }
+        }
+
         $data = [
-            'title'         => 'ศูนย์ควบคุมการสนทนาสด (Live Chat Desk)',
-            'activeMenu'    => 'chat_desk',
-            'cannedReplies' => $cannedReplies,
-            'agents'        => $agents,
-            'aiConfig'      => $aiConfig,
-            'activeSession' => $this->request->getGet('session') ?? '',
+            'title'           => 'ศูนย์ควบคุมการสนทนาสด (Live Chat Desk)',
+            'activeMenu'      => 'chat_desk',
+            'cannedReplies'   => $cannedReplies,
+            'agents'          => $agents,
+            'aiConfig'        => $aiConfig,
+            'activeSession'   => $targetSession,
+            'targetSessionId' => $targetSessionId,
         ];
 
         return view('chat/desk', array_merge($this->data, $data));
