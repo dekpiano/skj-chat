@@ -1,0 +1,131 @@
+---
+name: skj-fullstack-dev
+description: >-
+  Expert full-stack developer skill for SKJ Live Chat. Use when developing, refactoring, debugging, or optimizing CodeIgniter 4 backend logic, RESTful APIs, MySQL database queries, Gemini AI RAG pipelines, Telegram bot alerts, real-time message polling, or Docker configurations.
+---
+
+# SKJ Live Chat: Senior Full-Stack Engineering Manual
+
+This skill equips the agent with expert-level software engineering knowledge and architecture mastery tailored specifically for the **SKJ Live Chat System** (`skj-chat`) of Suankularb Wittayalai (Jiraprawat) Nakhon Sawan School.
+
+---
+
+## 1. System Architecture & Tech Stack
+
+```
+[Client Website / Embed] 
+       │ (Widget API: CORS, token-based, polling / uploads)
+       ▼
+[Apache 2.4 + PHP 8.3 (Docker)] ───► [CodeIgniter 4.5 Framework]
+                                              │
+               ┌──────────────────────────────┼──────────────────────────────┐
+               ▼                              ▼                              ▼
+      [MySQL Database]               [Google Gemini API]           [Telegram Bot API]
+     (skjacth_chatlive)            (AI Bot "น้องกุหลาบ")         (Live Agent Notifications)
+```
+
+- **Backend Runtime**: PHP 8.3 with Apache, OPcache + JIT enabled (`opcache-recommended.ini`).
+- **Framework**: CodeIgniter 4.5 (`codeigniter4/framework`).
+- **Entry Point**: Custom single-point front controller at project root `index.php` (FCPATH = root directory, not `public/index.php`).
+- **Database**: MySQL 8+ database `skjacth_chatlive` accessed via MySQLi driver, utf8mb4 encoding.
+- **Port Mapping**: Docker exposes `8071:443` (HTTPS with SSL).
+- **External Integrations**:
+  - Google Identity Services (OAuth 2.0 Token Verification via `oauth2.googleapis.com/tokeninfo`).
+  - Google Gemini AI API (`generativelanguage.googleapis.com/v1beta/models/...:generateContent`).
+  - Telegram Bot API (`api.telegram.org/bot<token>/sendMessage`).
+
+---
+
+## 2. Directory Structure & Key Files
+
+| Directory / File | Role & Key Responsibilities |
+| :--- | :--- |
+| `index.php` | Root bootstrap front controller; defines `FCPATH` and launches CI4. |
+| `app/Routes.php` | All route definitions. Auto-routing is disabled (`setAutoRoute(false)`). |
+| `app/Controllers/BaseController.php` | Controller base class; initializes `$this->session`, `$this->db`, loads `$this->currentAgent`, provides `checkAuth()` and `requireRole()`. |
+| `app/Controllers/ChatDesk.php` | Live Chat Agent Desk logic: queue fetching, active chats, message dispatch, file upload, bot pause toggle, session reassignment. |
+| `app/Controllers/Api/WidgetApi.php` | Public API with CORS for embeddable client widget: `initSession`, `pollMessages`, `sendMessage`, `uploadAttachment`, Gemini AI bot reply trigger, and Telegram notification trigger. |
+| `app/Controllers/Auth.php` | Google OAuth token verification, school domain whitelist check, session creation, and development login (`devLogin`). |
+| `app/Controllers/Knowledge.php` | RAG Knowledge Base management: web scraping (`saveUrl`), document upload (`uploadFile`), text snippet creation (`saveText`). |
+| `app/Controllers/AiSettings.php` | Gemini API configuration: API Key, model selector, system prompt, temperature, max tokens, test playground. |
+| `app/Controllers/TelegramSettings.php` | Telegram Bot token, target chat ID, notification status toggle, test dispatch. |
+| `app/Models/` | CodeIgniter Models: `ChatSessionModel`, `ChatMessageModel`, `AgentModel`, `AiConfigModel`, `KnowledgeModel`, `TelegramConfigModel`, `OauthConfigModel`, `CannedReplyModel`. |
+| `public/assets/js/skj-chat-widget.js` | Standalone, vanilla JavaScript embeddable widget injected on school portals. |
+| `writable/` | CI4 cache, session files, logs, and debug toolbar output. Must remain writable. |
+
+---
+
+## 3. Database Schema Blueprint
+
+### `tb_chat_sessions`
+- `session_id` (PK, auto-increment)
+- `session_token` (VARCHAR 64, unique hex token used by widget)
+- `user_name` (VARCHAR 100, visitor name)
+- `user_tel` (VARCHAR 50, visitor phone)
+- `assigned_agent_id` (INT nullable, FK to `tb_chat_agents`)
+- `department` (VARCHAR 50)
+- `notes` (TEXT, private admin notes)
+- `user_ip`, `user_agent` (VARCHAR)
+- `status` (`active`, `closed`)
+- `unread_user_count` (INT, unread count for visitor)
+- `unread_admin_count` (INT, unread count for staff)
+- `admin_active_at`, `last_admin_reply_at` (DATETIME)
+- `is_bot_paused` (TINYINT 1, `1` when human agent intervenes to prevent AI collisions)
+- `created_at`, `updated_at` (DATETIME)
+
+### `tb_chat_messages`
+- `message_id` (PK, auto-increment)
+- `session_id` (INT, FK to `tb_chat_sessions`)
+- `sender_type` (`user`, `admin`, `system`)
+- `sender_name` (VARCHAR 100)
+- `agent_id` (INT nullable, FK to `tb_chat_agents`)
+- `message` (TEXT)
+- `attachment_url` (TEXT), `attachment_type` (`image`, `file`)
+- `is_bot` (TINYINT 1, `1` if generated by Gemini AI)
+- `telegram_msg_id` (VARCHAR 50 nullable)
+- `is_read` (TINYINT 1)
+- `created_at` (DATETIME)
+
+### `tb_chat_agents`
+- `agent_id` (PK), `google_id`, `email`, `fullname`, `avatar`, `role` (`superadmin`, `admin`, `agent`), `status` (`active`, `suspended`), `online_status` (`online`, `busy`, `offline`), `last_login_at`, `last_active_at`.
+
+### Supporting Tables
+- `tb_chat_ai_config`: `ai_provider`, `ai_api_key`, `ai_model`, `ai_system_prompt`, `ai_status`, `ai_temperature`, `ai_max_tokens`.
+- `tb_chat_ai_knowledge`: `title`, `source_type` (`url`, `file`, `text`), `source_url`, `file_path`, `content`, `char_count`, `status`.
+- `tb_telegram_config`: `telegram_bot_token`, `telegram_chat_id`, `telegram_status`.
+- `tb_oauth_config`: `google_client_id`, `google_client_secret`, `allowed_domains`.
+- `tb_chat_canned_replies`: `title`, `shortcut` (e.g. `/hello`), `message`, `category`.
+
+---
+
+## 4. Engineering Principles & Best Practices
+
+### A. Bot & Human Handover Protocol
+- When a human agent sends a message from `ChatDesk::sendMessage`, the session's `is_bot_paused` flag is automatically flipped to `1`.
+- In `WidgetApi::sendMessage`, the AI reply (`tryAiReply`) is only triggered if `$session->is_bot_paused == 0`.
+- The bot can be manually toggled back on or off per session from the Chat Desk via `chat/toggle-bot/{sessionId}`.
+
+### B. Gemini AI RAG Pipeline Implementation
+- When generating an AI response:
+  1. Retrieve active knowledge entries from `tb_chat_ai_knowledge` where `status = 'on'`.
+  2. Assemble a concise system instruction combining `ai_system_prompt` and formatted knowledge snippets.
+  3. Include the last 6 messages (`LIMIT 6`, reversed) for conversation context.
+  4. Use timeouts (`timeout: 15s`) and non-blocking error guards so widget communication never hangs if Google API is delayed.
+
+### C. Polling & Performance Optimization
+- Currently, polling runs every 3-5 seconds on both Widget and Chat Desk.
+- When querying queues or message updates, always index by `session_id`, `status`, and `created_at`.
+- Return only newly created messages where possible or compare `last_message_id` to reduce payload sizes.
+- Handle CORS preflight `OPTIONS` requests cleanly with `exit()` to minimize PHP engine spin-up.
+
+### D. File Upload Security
+- Whitelist file extensions: `['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip']`.
+- Validate file MIME types and size before moving to `uploads/chat/`.
+- Use random filenames: `$file->getRandomName()`.
+- Ensure `uploads/chat/` directory has proper file read permissions and `.htaccess` prevents script execution (`php_flag engine off`).
+
+### E. CodeIgniter 4 Coding Conventions
+- Never use direct `$_POST` or `$_GET`. Use `$this->request->getPost()` or `$this->request->getGet()`.
+- Use CI4 Query Builder (`$this->db->table(...)`) or Model methods with parameter binding to prevent SQL injection.
+- Escape all output rendered in views using `esc($variable)`.
+- Use database transactions (`$this->db->transStart()` and `$this->db->transComplete()`) when performing multiple dependent inserts/updates.
