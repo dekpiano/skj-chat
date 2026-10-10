@@ -18,6 +18,7 @@
     const PRIMARY_COLOR = (scriptTag && scriptTag.getAttribute('data-primary-color')) || '#e91e63';
     const SECONDARY_COLOR = '#1976d2';
     const HIDE_MOBILE_BTN = scriptTag && (scriptTag.getAttribute('data-hide-mobile-btn') === 'true' || scriptTag.getAttribute('data-hide-floating-mobile') === 'true');
+    const HIDE_FLOATING_BTN = scriptTag && (scriptTag.getAttribute('data-hide-floating') === 'true' || scriptTag.getAttribute('data-hide-launcher') === 'true' || scriptTag.getAttribute('data-hide-button') === 'true');
 
     const STORAGE_KEY   = 'skj_chat_session_token';
     const USER_NAME_KEY = 'skj_chat_user_name';
@@ -351,36 +352,51 @@
                 font-size: 10.5px !important;
             }
             .skj-header {
-                padding-top: max(12px, env(safe-area-inset-top)) !important;
+                padding-top: max(12px, env(safe-area-inset-top, 12px)) !important;
                 padding-bottom: 12px !important;
-                padding-left: max(14px, env(safe-area-inset-left)) !important;
-                padding-right: max(14px, env(safe-area-inset-right)) !important;
-                position: relative;
+                padding-left: max(14px, env(safe-area-inset-left, 14px)) !important;
+                padding-right: max(14px, env(safe-area-inset-right, 14px)) !important;
+                min-height: calc(58px + env(safe-area-inset-top, 0px)) !important;
+                box-sizing: border-box !important;
+                box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16) !important;
             }
-            .skj-header::before {
-                content: '';
-                display: block;
-                width: 36px;
-                height: 4px;
-                background: rgba(255, 255, 255, 0.4);
-                border-radius: 4px;
-                margin: 0 auto 8px;
+            .skj-header-avatar-wrap {
+                width: 44px !important;
+                height: 44px !important;
             }
             .skj-header-logo {
-                width: 42px !important;
-                height: 42px !important;
+                width: 44px !important;
+                height: 44px !important;
+                padding: 2px !important;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.2) !important;
+            }
+            .skj-header-status-dot {
+                width: 12px !important;
+                height: 12px !important;
+                border-width: 2.5px !important;
             }
             .skj-header-title {
-                font-size: 15px !important;
+                font-size: 15.5px !important;
+                font-weight: 700 !important;
+                gap: 6px !important;
+            }
+            .skj-header-badge {
+                font-size: 11px !important;
+                padding: 2px 8px !important;
             }
             .skj-header-subtitle {
-                font-size: 11.5px !important;
+                font-size: 12px !important;
+                margin-top: 2px !important;
+                color: rgba(255, 255, 255, 0.95) !important;
             }
             .skj-close-btn {
-                width: 42px !important;
-                height: 42px !important;
-                font-size: 22px !important;
+                width: 40px !important;
+                height: 40px !important;
+                min-width: 40px !important;
+                min-height: 40px !important;
                 border-radius: 50% !important;
+                background: rgba(255, 255, 255, 0.22) !important;
+                border: 1px solid rgba(255, 255, 255, 0.35) !important;
             }
             .skj-chips-bar {
                 padding: 10px 14px !important;
@@ -462,30 +478,71 @@
             ` : ''}
         }
 
+        ${HIDE_FLOATING_BTN ? `
+        .skj-widget-btn, .skj-widget-teaser {
+            display: none !important;
+        }
+        ` : ''}
+
         .skj-header {
-            background: linear-gradient(135deg, ${PRIMARY_COLOR} 0%, #c2185b 50%, ${SECONDARY_COLOR} 100%);
+            background: linear-gradient(135deg, ${PRIMARY_COLOR} 0%, #c2185b 52%, ${SECONDARY_COLOR} 100%);
             color: #ffffff;
-            padding: 14px 16px;
+            padding: 13px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
             user-select: none;
+            position: relative;
+            z-index: 10;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.18);
         }
         .skj-header-info {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+        .skj-header-avatar-wrap {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
         }
         .skj-header-logo {
             width: 40px;
             height: 40px;
             border-radius: 50%;
             background: #ffffff;
-            padding: 3px;
+            padding: 2.5px;
             object-fit: contain;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-            flex-shrink: 0;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            display: block;
+        }
+        .skj-header-status-dot {
+            position: absolute;
+            bottom: 0px;
+            right: 0px;
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: #10b981;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 8px #10b981;
+            animation: skjStatusGlow 2s infinite ease-in-out;
+        }
+        @keyframes skjStatusGlow {
+            0%, 100% { box-shadow: 0 0 6px #10b981; transform: scale(1); }
+            50% { box-shadow: 0 0 12px #34d399; transform: scale(1.12); }
+        }
+        .skj-header-text {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .skj-header-title {
             font-weight: 700;
@@ -494,42 +551,57 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            color: #ffffff;
+            letter-spacing: 0.01em;
+        }
+        .skj-header-badge {
+            font-size: 10.5px;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(4px);
+            padding: 1.5px 7px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         .skj-header-subtitle {
-            font-size: 11px;
-            opacity: 0.92;
+            font-size: 11.5px;
+            opacity: 0.94;
             display: flex;
             align-items: center;
             gap: 5px;
             margin-top: 2px;
-        }
-        .skj-status-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #10b981;
-            display: inline-block;
-            box-shadow: 0 0 6px #10b981;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: rgba(255, 255, 255, 0.92);
         }
         .skj-close-btn {
             background: rgba(255, 255, 255, 0.2);
-            border: none;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
             color: #ffffff;
             cursor: pointer;
-            width: 34px;
-            height: 34px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
-            line-height: 1;
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
             touch-action: manipulation;
+            flex-shrink: 0;
+            margin-left: 8px;
         }
-        .skj-close-btn:hover, .skj-close-btn:active {
+        .skj-close-btn:hover {
             background: rgba(255, 255, 255, 0.35);
-            transform: scale(1.06);
+            transform: scale(1.08);
+        }
+        .skj-close-btn:active {
+            transform: scale(0.92);
+            background: rgba(255, 255, 255, 0.45);
         }
 
         /* Chips Bar */
@@ -941,18 +1013,27 @@
     widgetWindow.innerHTML = `
         <div class="skj-header">
             <div class="skj-header-info">
-                <img src="${CHAT_SERVER}/public/assets/images/logo-skj.png" class="skj-header-logo" alt="SKJ Logo" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=SKJ&background=ffffff&color=e91e63';">
-                <div>
+                <div class="skj-header-avatar-wrap">
+                    <img src="${CHAT_SERVER}/public/assets/images/logo-skj.png" class="skj-header-logo" alt="SKJ Logo" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=SKJ&background=ffffff&color=e91e63';">
+                    <span class="skj-header-status-dot" title="ระบบออนไลน์พร้อมให้บริการ"></span>
+                </div>
+                <div class="skj-header-text">
                     <div class="skj-header-title">
-                        SKJ Live Chat
-                        <span style="font-size:11px; background: rgba(255,255,255,0.22); padding: 1px 6px; border-radius: 10px; font-weight:400;">AI & เจ้าหน้าที่</span>
+                        <span>SKJ Live Chat</span>
+                        <span class="skj-header-badge">AI & เจ้าหน้าที่</span>
                     </div>
                     <div class="skj-header-subtitle">
-                        <span class="skj-status-dot"></span> พร้อมให้บริการ | สวนกุหลาบฯ (จิรประวัติ)
+                        <span>🌸 พร้อมให้บริการ</span>
+                        <span>•</span>
+                        <span style="opacity:0.9;">สวนกุหลาบฯ (จิรประวัติ)</span>
                     </div>
                 </div>
             </div>
-            <button class="skj-close-btn" id="skjCloseBtn" title="ปิดหน้าต่าง">&times;</button>
+            <button type="button" class="skj-close-btn" id="skjCloseBtn" title="ปิดหน้าต่างสนทนา" aria-label="Close Chat">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </button>
         </div>
 
         <!-- Chips Row -->
@@ -1075,12 +1156,16 @@
     };
     window.openSKJChat = window.SKJChat.open;
 
-    // Delegate Click for any custom trigger in Navbar or Page
+    // Delegate Click for any custom trigger in Navbar, Links, Buttons or Page
     document.addEventListener('click', function(e) {
-        const trigger = e.target.closest('[data-skj-chat="open"], .skj-chat-trigger, .btn-skj-chat, a[href="#skj-chat"]');
+        const trigger = e.target.closest('[data-skj-chat="open"], [data-skj-chat-open], [data-skj-chat-toggle], [data-skj-chat], .skj-chat-trigger, .btn-skj-chat, a[href="#skj-chat"], a[href="#chat"], a[href="#skjchat"]');
         if (trigger) {
             e.preventDefault();
-            window.SKJChat.open();
+            if (trigger.getAttribute('data-skj-chat-toggle') !== null || trigger.getAttribute('data-skj-chat') === 'toggle') {
+                window.SKJChat.toggle();
+            } else {
+                window.SKJChat.open();
+            }
         }
     });
 
