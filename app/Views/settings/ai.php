@@ -105,7 +105,7 @@
                     <label class="form-label small fw-semibold">คำถามทดสอบ</label>
                     <div class="input-group">
                         <input type="text" id="testAiPromptInput" class="form-control" value="โรงเรียนเปิดรับสมัคร ม.1 ช่วงไหน และต้องเตรียมเอกสารอะไรบ้างครับ">
-                        <button class="btn btn-primary" type="button" onclick="runAiTest()" style="background: var(--skj-pink); border-color: var(--skj-pink);">
+                        <button class="btn btn-primary" id="runAiTestBtn" type="button" onclick="runAiTest()" style="background: var(--skj-pink); border-color: var(--skj-pink);">
                             <i class="fa-solid fa-paper-plane me-1"></i> ทดสอบส่ง
                         </button>
                     </div>
@@ -132,23 +132,33 @@
     function saveAiConfig(e) {
         e.preventDefault();
         const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (window.setButtonLoading) window.setButtonLoading(submitBtn, true, 'กำลังบันทึก...');
         const formData = new FormData(form);
 
         Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         fetch(`${BASE_URL}/settings/ai/save`, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
+                if (window.setButtonLoading) window.setButtonLoading(submitBtn, false);
                 if (data.status === 'success') {
                     Swal.fire('บันทึกสำเร็จ', data.message, 'success');
                 } else {
                     Swal.fire('เกิดข้อผิดพลาด', data.message, 'error');
                 }
+            })
+            .catch(() => {
+                if (window.setButtonLoading) window.setButtonLoading(submitBtn, false);
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
             });
     }
 
     function runAiTest() {
         const prompt = document.getElementById('testAiPromptInput').value.trim();
         if (!prompt) return;
+
+        const btn = document.getElementById('runAiTestBtn');
+        if (window.setButtonLoading) window.setButtonLoading(btn, true, 'กำลังส่ง...');
 
         const resultArea = document.getElementById('testAiResultArea');
         resultArea.innerHTML = '<span class="text-muted"><i class="fa-solid fa-spinner fa-spin me-1"></i> กำลังสอบถาม Gemini...</span>';
@@ -159,6 +169,7 @@
         fetch(`${BASE_URL}/settings/ai/test`, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
+                if (window.setButtonLoading) window.setButtonLoading(btn, false);
                 if (data.status === 'success') {
                     resultArea.innerText = data.reply;
                 } else {
@@ -166,6 +177,7 @@
                 }
             })
             .catch(err => {
+                if (window.setButtonLoading) window.setButtonLoading(btn, false);
                 resultArea.innerHTML = `<span class="text-danger">ไม่สามารถเชื่อมต่อได้</span>`;
             });
     }

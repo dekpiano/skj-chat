@@ -8,7 +8,7 @@
             <p class="text-muted small mb-0">รับข้อความแจ้งเตือนผ่านกลุ่ม Telegram ทันทีที่มีผู้ใช้ทักเข้ามาหรือต้องการติดต่อเจ้าหน้าที่</p>
         </div>
         <div>
-            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" onclick="testTelegramAlert()">
+            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" id="testTelegramBtn" onclick="testTelegramAlert()">
                 <i class="fa-solid fa-paper-plane me-1"></i> ส่งข้อความทดสอบ
             </button>
         </div>
@@ -84,25 +84,36 @@
     function saveTelegramConfig(e) {
         e.preventDefault();
         const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (window.setButtonLoading) window.setButtonLoading(submitBtn, true, 'กำลังบันทึก...');
         const formData = new FormData(form);
 
         Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         fetch(`${BASE_URL}/settings/telegram/save`, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
+                if (window.setButtonLoading) window.setButtonLoading(submitBtn, false);
                 if (data.status === 'success') {
                     Swal.fire('สำเร็จ', data.message, 'success');
                 } else {
                     Swal.fire('ผิดพลาด', data.message, 'error');
                 }
+            })
+            .catch(() => {
+                if (window.setButtonLoading) window.setButtonLoading(submitBtn, false);
+                Swal.fire('ผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
             });
     }
 
     function testTelegramAlert() {
+        const btn = document.getElementById('testTelegramBtn');
+        if (window.setButtonLoading) window.setButtonLoading(btn, true, 'กำลังส่ง...');
+
         Swal.fire({ title: 'กำลังส่งข้อความทดสอบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         fetch(`${BASE_URL}/settings/telegram/test`, { method: 'POST' })
             .then(res => res.json())
             .then(data => {
+                if (window.setButtonLoading) window.setButtonLoading(btn, false);
                 if (data.status === 'success') {
                     Swal.fire('ส่งสำเร็จ!', data.message, 'success');
                 } else {
@@ -110,6 +121,7 @@
                 }
             })
             .catch(err => {
+                if (window.setButtonLoading) window.setButtonLoading(btn, false);
                 Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อได้', 'error');
             });
     }

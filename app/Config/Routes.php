@@ -47,6 +47,11 @@ $routes->group('chat', function ($routes) {
     $routes->post('notes', 'ChatDesk::saveNotes');
     $routes->post('toggle-status/(:num)', 'ChatDesk::toggleStatus/$1');
     $routes->post('online-status', 'ChatDesk::updateOnlineStatus');
+    $routes->post('extract-knowledge/(:num)', 'ChatDesk::extractKnowledge/$1');
+    $routes->post('preview-knowledge/(:num)', 'ChatDesk::previewKnowledge/$1');
+    $routes->post('save-extracted-knowledge', 'ChatDesk::saveExtractedKnowledge');
+    $routes->post('delete-session/(:num)', 'ChatDesk::deleteSession/$1');
+    $routes->post('cleanup-history', 'ChatDesk::cleanupHistory');
 });
 
 // AI Knowledge Base

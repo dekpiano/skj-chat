@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('skj_theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
     <title><?= esc($title ?? 'SKJ Live Chat') ?> | ระบบสนทนาสดโรงเรียนสวนกุหลาบวิทยาลัย (จิรประวัติ) นครสวรรค์</title>
     <link rel="icon" type="image/png" href="https://skj.ac.th/assets/img/logo/logo-skj.png">
     
@@ -296,12 +303,136 @@
             color: #ffffff;
         }
 
-        .sidebar-link .badge {
+        .sidebar-link .badge,
+        .sidebar-unread-badge {
             margin-left: auto;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 7px;
+            font-family: 'Inter', sans-serif;
             font-size: 0.72rem;
-            border-radius: 20px;
-            padding: 0.2rem 0.55rem;
+            font-weight: 700;
+            line-height: 1;
+            color: #ffffff;
+            background: linear-gradient(135deg, #ff1744 0%, #e91e63 100%);
+            border-radius: 999px;
+            box-shadow: 0 3px 10px rgba(233, 30, 99, 0.45);
             flex-shrink: 0;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: sidebarBadgePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 1;
+        }
+
+        /* Pulsing Radar Ring on Notification */
+        .sidebar-unread-badge::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #ff1744, #e91e63);
+            opacity: 0.6;
+            z-index: -1;
+            animation: sidebarBadgePing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+
+        /* High-contrast active link styling */
+        .sidebar-link.active .sidebar-unread-badge {
+            background: #ffffff;
+            color: var(--skj-pink-dark);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+        }
+
+        .sidebar-link.active .sidebar-unread-badge::before {
+            background: #ffffff;
+            opacity: 0.45;
+        }
+
+        /* Micro-animations */
+        @keyframes sidebarBadgePing {
+            0% {
+                transform: scale(0.92);
+                opacity: 0.75;
+            }
+            70%, 100% {
+                transform: scale(1.65);
+                opacity: 0;
+            }
+        }
+
+        @keyframes sidebarBadgePop {
+            0% {
+                transform: scale(0.4);
+                opacity: 0;
+            }
+            70% {
+                transform: scale(1.18);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .sidebar-badge-pop {
+            animation: sidebarBadgePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+
+        /* Live status card in sidebar */
+        .sidebar-live-card {
+            background: linear-gradient(135deg, #fff5f8 0%, #f0f7ff 100%);
+            border: 1px solid #fce4ec;
+            border-radius: 12px;
+            padding: 0.75rem 0.85rem;
+            margin: 0.85rem 0.25rem 0.25rem;
+            box-shadow: 0 2px 8px rgba(233, 30, 99, 0.04);
+            transition: all 0.25s ease;
+        }
+
+        .sidebar-live-card:hover {
+            border-color: #f8bbd0;
+            box-shadow: 0 4px 12px rgba(233, 30, 99, 0.08);
+        }
+
+        .sidebar-live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            display: inline-block;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: liveDotPulse 2s infinite;
+        }
+
+        @keyframes liveDotPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        /* Universal Loading State on Buttons */
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.85;
+            cursor: not-allowed !important;
+        }
+
+        .btn-loading .fa-spin,
+        .btn-loading .spinner-border {
+            margin-right: 4px;
         }
 
         /* Topbar Styling */
@@ -392,13 +523,292 @@
             background: #94a3b8;
         }
 
+        /* ==========================================================================
+           DARK MODE DESIGN SYSTEM & TOKENS (โทนมืด)
+           ========================================================================== */
+        [data-bs-theme="dark"] {
+            --skj-pink: #f06292;
+            --skj-pink-dark: #ec407a;
+            --skj-pink-light: rgba(240, 98, 146, 0.15);
+            --skj-pink-subtle: rgba(233, 30, 99, 0.12);
+            --skj-blue: #42a5f5;
+            --skj-blue-dark: #1e88e5;
+            --skj-blue-light: rgba(66, 165, 245, 0.15);
+        }
+
+        [data-bs-theme="dark"] body {
+            background-color: #0b0f19 !important;
+            color: #e2e8f0 !important;
+        }
+
+        [data-bs-theme="dark"] .app-sidebar {
+            background: #111827 !important;
+            border-right-color: #1f2937 !important;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.25) !important;
+        }
+
+        [data-bs-theme="dark"] .sidebar-brand {
+            background: linear-gradient(135deg, #111827 0%, #1a1524 100%) !important;
+            border-bottom-color: #1f2937 !important;
+        }
+
+        [data-bs-theme="dark"] .sidebar-brand-text .subtitle {
+            color: #9ca3af !important;
+        }
+
+        [data-bs-theme="dark"] .menu-label {
+            color: #6b7280 !important;
+        }
+
+        [data-bs-theme="dark"] .sidebar-link {
+            color: #9ca3af !important;
+        }
+
+        [data-bs-theme="dark"] .sidebar-link i {
+            color: #6b7280 !important;
+        }
+
+        [data-bs-theme="dark"] .sidebar-link:hover {
+            color: #f472b6 !important;
+            background: rgba(244, 114, 182, 0.12) !important;
+        }
+
+        [data-bs-theme="dark"] .sidebar-link:hover i {
+            color: #f472b6 !important;
+        }
+
+        [data-bs-theme="dark"] .sidebar-link.active {
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%) !important;
+            box-shadow: 0 4px 14px rgba(233, 30, 99, 0.35) !important;
+        }
+
+        [data-bs-theme="dark"] .sidebar-live-card {
+            background: linear-gradient(135deg, rgba(233, 30, 99, 0.08) 0%, rgba(25, 118, 210, 0.08) 100%) !important;
+            border-color: #1f2937 !important;
+        }
+
+        [data-bs-theme="dark"] .app-topbar {
+            background: #111827 !important;
+            border-bottom-color: #1f2937 !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        [data-bs-theme="dark"] .app-main {
+            background-color: #0b0f19 !important;
+        }
+
+        [data-bs-theme="dark"] .card {
+            background-color: #111827 !important;
+            border-color: #1f2937 !important;
+            color: #e2e8f0 !important;
+        }
+
+        [data-bs-theme="dark"] .card-header,
+        [data-bs-theme="dark"] .card-footer {
+            background-color: #161f30 !important;
+            border-color: #1f2937 !important;
+        }
+
+        [data-bs-theme="dark"] .table {
+            color: #e2e8f0 !important;
+            border-color: #1f2937 !important;
+        }
+
+        [data-bs-theme="dark"] .table-light {
+            background-color: #161f30 !important;
+            color: #e2e8f0 !important;
+        }
+
+        [data-bs-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+            background-color: rgba(255, 255, 255, 0.02) !important;
+            color: #e2e8f0 !important;
+        }
+
+        [data-bs-theme="dark"] .table-hover > tbody > tr:hover > * {
+            background-color: rgba(255, 255, 255, 0.04) !important;
+        }
+
+        [data-bs-theme="dark"] .modal-content {
+            background-color: #111827 !important;
+            border-color: #1f2937 !important;
+            color: #e2e8f0 !important;
+        }
+
+        [data-bs-theme="dark"] .modal-header,
+        [data-bs-theme="dark"] .modal-footer {
+            border-color: #1f2937 !important;
+        }
+
+        [data-bs-theme="dark"] .dropdown-menu {
+            background-color: #111827 !important;
+            border-color: #1f2937 !important;
+            color: #e2e8f0 !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        [data-bs-theme="dark"] .dropdown-item {
+            color: #cbd5e1 !important;
+        }
+
+        [data-bs-theme="dark"] .dropdown-item:hover,
+        [data-bs-theme="dark"] .dropdown-item:focus {
+            background-color: #1f2937 !important;
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .dropdown-divider {
+            border-color: #1f2937 !important;
+        }
+
+        [data-bs-theme="dark"] .form-control,
+        [data-bs-theme="dark"] .form-select {
+            background-color: #0b0f19 !important;
+            border-color: #1f2937 !important;
+            color: #f1f5f9 !important;
+        }
+
+        [data-bs-theme="dark"] .form-control:focus,
+        [data-bs-theme="dark"] .form-select:focus {
+            border-color: var(--skj-pink) !important;
+            background-color: #0b0f19 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.25) !important;
+        }
+
+        [data-bs-theme="dark"] .input-group-text {
+            background-color: #161f30 !important;
+            border-color: #1f2937 !important;
+            color: #9ca3af !important;
+        }
+
+        [data-bs-theme="dark"] .bg-light {
+            background-color: #111827 !important;
+        }
+
+        [data-bs-theme="dark"] .bg-white {
+            background-color: #111827 !important;
+        }
+
+        [data-bs-theme="dark"] .text-dark {
+            color: #f8fafc !important;
+        }
+
+        [data-bs-theme="dark"] .text-secondary,
+        [data-bs-theme="dark"] .text-muted {
+            color: #9ca3af !important;
+        }
+
+        [data-bs-theme="dark"] .border,
+        [data-bs-theme="dark"] .border-top,
+        [data-bs-theme="dark"] .border-bottom,
+        [data-bs-theme="dark"] .border-start,
+        [data-bs-theme="dark"] .border-end {
+            border-color: #1f2937 !important;
+        }
+
+        [data-bs-theme="dark"] .btn-light {
+            background-color: #161f30 !important;
+            border-color: #1f2937 !important;
+            color: #cbd5e1 !important;
+        }
+
+        [data-bs-theme="dark"] .btn-light:hover {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .list-group-item {
+            background-color: #111827 !important;
+            border-color: #1f2937 !important;
+            color: #e2e8f0 !important;
+        }
+
+        [data-bs-theme="dark"] .agent-status-badge.offline {
+            background-color: #161f30 !important;
+            border-color: #1f2937 !important;
+            color: #9ca3af !important;
+        }
+
+        [data-bs-theme="dark"] .bg-primary-subtle {
+            background-color: rgba(66, 165, 245, 0.16) !important;
+            color: #90caf9 !important;
+            border-color: rgba(66, 165, 245, 0.3) !important;
+        }
+        [data-bs-theme="dark"] .bg-success-subtle {
+            background-color: rgba(34, 197, 94, 0.16) !important;
+            color: #86efac !important;
+            border-color: rgba(34, 197, 94, 0.3) !important;
+        }
+        [data-bs-theme="dark"] .bg-warning-subtle {
+            background-color: rgba(245, 158, 11, 0.16) !important;
+            color: #fde68a !important;
+            border-color: rgba(245, 158, 11, 0.3) !important;
+        }
+        [data-bs-theme="dark"] .bg-danger-subtle {
+            background-color: rgba(239, 68, 68, 0.16) !important;
+            color: #fca5a5 !important;
+            border-color: rgba(239, 68, 68, 0.3) !important;
+        }
+        [data-bs-theme="dark"] .bg-info-subtle {
+            background-color: rgba(6, 182, 212, 0.16) !important;
+            color: #a5f3fc !important;
+            border-color: rgba(6, 182, 212, 0.3) !important;
+        }
+        [data-bs-theme="dark"] .bg-secondary-subtle {
+            background-color: rgba(148, 163, 184, 0.16) !important;
+            color: #cbd5e1 !important;
+            border-color: rgba(148, 163, 184, 0.3) !important;
+        }
+
+        [data-bs-theme="dark"] .alert-warning {
+            background-color: #271e11 !important;
+            color: #fde68a !important;
+            border-color: #533e1c !important;
+        }
+        [data-bs-theme="dark"] .alert-info {
+            background-color: #0c2333 !important;
+            color: #a5f3fc !important;
+            border-color: #164e63 !important;
+        }
+        [data-bs-theme="dark"] .alert-secondary {
+            background-color: #161f30 !important;
+            color: #cbd5e1 !important;
+            border-color: #1f2937 !important;
+        }
+
+        [data-bs-theme="dark"] .swal2-popup {
+            background: #111827 !important;
+            color: #e2e8f0 !important;
+            border: 1px solid #1f2937 !important;
+        }
+
+        [data-bs-theme="dark"] .swal2-title {
+            color: #f8fafc !important;
+        }
+
+        [data-bs-theme="dark"] .swal2-html-container {
+            color: #9ca3af !important;
+        }
+
+        [data-bs-theme="dark"] ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        [data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+        }
+        [data-bs-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+
         @media (max-width: 991.98px) {
             .app-sidebar {
                 transform: translateX(-100%);
             }
             .app-sidebar.show {
                 transform: translateX(0);
-                box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15);
+                box-shadow: 4px 0 25px rgba(0, 0, 0, 0.4);
             }
             .app-topbar, .app-main {
                 left: 0;
@@ -424,12 +834,26 @@
             <a href="<?= base_url('chat/desk') ?>" class="sidebar-link <?= ($activeMenu === 'chat_desk') ? 'active' : '' ?>">
                 <i class="fa-solid fa-headset"></i>
                 <span>หน้าโต๊ะแชท (Chat Desk)</span>
-                <span class="badge bg-danger d-none" id="sidebarUnreadBadge">0</span>
+                <span class="sidebar-unread-badge d-none" id="sidebarUnreadBadge">0</span>
             </a>
             <a href="<?= base_url('canned') ?>" class="sidebar-link <?= ($activeMenu === 'canned_replies') ? 'active' : '' ?>">
                 <i class="fa-solid fa-bolt"></i>
                 <span>ข้อความด่วน (Canned)</span>
             </a>
+
+            <!-- Live Queue Status Mini Card -->
+            <div class="sidebar-live-card">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="d-flex align-items-center gap-2" style="font-size: 0.72rem; font-weight: 600; color: #475569;">
+                        <span class="sidebar-live-dot"></span> ระบบสนทนาสด
+                    </span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.62rem; padding: 2px 6px;">พร้อมรับแชท</span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between text-secondary mt-1" style="font-size: 0.76rem;">
+                    <span>คิวรอตอบกลับ</span>
+                    <span class="fw-bold text-dark font-inter" id="sidebarQueueWaitingCount">0 รายการ</span>
+                </div>
+            </div>
 
             <div class="menu-label">ปัญญาประดิษฐ์ & คลังข้อมูล</div>
             <a href="<?= base_url('knowledge') ?>" class="sidebar-link <?= ($activeMenu === 'knowledge') ? 'active' : '' ?>">
@@ -514,6 +938,11 @@
             <!-- Sound Notification Toggle -->
             <button class="btn btn-light btn-sm text-secondary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px;" id="btnToggleSound" onclick="toggleDeskSound()" title="เปิด/ปิดเสียงแจ้งเตือนแชท">
                 <i class="fa-solid fa-volume-high" id="soundIcon"></i>
+            </button>
+
+            <!-- Theme Toggle (Light / Dark Mode) -->
+            <button class="btn btn-light btn-sm text-secondary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px;" id="btnToggleTheme" onclick="toggleAppTheme()" title="สลับโหมดสี (สว่าง / มืด)">
+                <i class="fa-solid fa-moon" id="themeIcon"></i>
             </button>
 
             <!-- External link to main site -->
@@ -619,8 +1048,37 @@
             }
         }
 
+        // Theme Switcher Manager (Light / Dark Mode)
+        function updateThemeUI(theme) {
+            const icon = document.getElementById('themeIcon');
+            const btn = document.getElementById('btnToggleTheme');
+            if (theme === 'dark') {
+                if (icon) {
+                    icon.className = 'fa-solid fa-sun text-warning';
+                }
+                if (btn) btn.title = 'เปลี่ยนเป็นโหมดสว่าง (Light Mode)';
+            } else {
+                if (icon) {
+                    icon.className = 'fa-solid fa-moon text-secondary';
+                }
+                if (btn) btn.title = 'เปลี่ยนเป็นโหมดมืด (Dark Mode)';
+            }
+        }
+
+        function toggleAppTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('skj_theme', newTheme);
+            updateThemeUI(newTheme);
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             updateSoundIcon();
+            const activeTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+            updateThemeUI(activeTheme);
         });
 
         // Sound player helper
@@ -674,6 +1132,106 @@
                 console.error(err);
             }
         }
+
+        // Global real-time sidebar notification updater for all admin pages
+        (function() {
+            let lastUnreadCount = 0;
+            const isChatDesk = window.location.pathname.includes('/chat/desk') || window.location.pathname.endsWith('/chat');
+
+            function syncSidebarBadges(stats) {
+                if (!stats) return;
+                const unread = parseInt(stats.unassigned || 0, 10);
+                const sidebarBadge = document.getElementById('sidebarUnreadBadge');
+                const queueCardCount = document.getElementById('sidebarQueueWaitingCount');
+
+                if (sidebarBadge) {
+                    const prevCount = parseInt(sidebarBadge.innerText, 10) || 0;
+                    sidebarBadge.innerText = unread > 99 ? '99+' : unread;
+                    sidebarBadge.classList.toggle('d-none', unread === 0);
+
+                    if (unread > 0 && unread !== prevCount) {
+                        sidebarBadge.classList.remove('sidebar-badge-pop');
+                        void sidebarBadge.offsetWidth; // trigger reflow
+                        sidebarBadge.classList.add('sidebar-badge-pop');
+                    }
+                }
+
+                if (queueCardCount) {
+                    queueCardCount.innerText = `${unread} รายการ`;
+                    if (unread > 0) {
+                        queueCardCount.className = 'fw-bold text-danger font-inter';
+                    } else {
+                        queueCardCount.className = 'fw-bold text-dark font-inter';
+                    }
+                }
+
+                // If on other pages and a brand new unread queue arrives, trigger notification sound
+                if (!isChatDesk && unread > lastUnreadCount && lastUnreadCount !== 0) {
+                    playNotifySound();
+                }
+                lastUnreadCount = unread;
+            }
+
+            // Expose globally so chat desk can also call it
+            window.syncSidebarBadges = syncSidebarBadges;
+
+            // Run periodic background sync when on other admin pages
+            if (!isChatDesk) {
+                function pollSidebarStatus() {
+                    fetch(`${BASE_URL}/chat/queue?filter=active`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data && data.stats) {
+                                syncSidebarBadges(data.stats);
+                            }
+                        })
+                        .catch(() => {});
+                }
+
+                document.addEventListener('DOMContentLoaded', () => {
+                    setTimeout(pollSidebarStatus, 1000);
+                    setInterval(pollSidebarStatus, 12000);
+                });
+            }
+        })();
+
+        // Universal Button Loading Helper
+        window.setButtonLoading = function(btn, isLoading = true, loadingText = null) {
+            if (!btn) return;
+            if (typeof btn === 'string') btn = document.querySelector(btn);
+            if (!btn) return;
+
+            if (isLoading) {
+                if (!btn.dataset.originalHtml) {
+                    btn.dataset.originalHtml = btn.innerHTML;
+                }
+                btn.disabled = true;
+                btn.classList.add('btn-loading');
+                const text = loadingText !== null ? `<span class="ms-1">${loadingText}</span>` : '';
+                btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>${text}`;
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('btn-loading');
+                if (btn.dataset.originalHtml) {
+                    btn.innerHTML = btn.dataset.originalHtml;
+                    delete btn.dataset.originalHtml;
+                }
+            }
+        };
+
+        // Auto-attach loading state to forms on submit
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (form.getAttribute('data-no-auto-loading') === 'true') return;
+            const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+            if (submitBtn && !submitBtn.disabled) {
+                setTimeout(() => {
+                    if (!e.defaultPrevented) {
+                        window.setButtonLoading(submitBtn, true, 'กำลังบันทึก...');
+                    }
+                }, 10);
+            }
+        });
     </script>
 
     <?= $this->renderSection('scripts') ?>

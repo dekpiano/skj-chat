@@ -113,10 +113,15 @@ class WidgetApi extends BaseController
             return $this->response->setJSON(['status' => 'error', 'message' => 'Session not found']);
         }
 
-        // Mark user unread to 0
+        // Mark user unread to 0 and mark staff/bot messages as read
         if ($session->unread_user_count > 0) {
             $this->db->table('tb_chat_sessions')->where('session_id', $session->session_id)->update(['unread_user_count' => 0]);
         }
+        $this->db->table('tb_chat_messages')
+            ->where('session_id', $session->session_id)
+            ->where('sender_type !=', 'user')
+            ->where('is_read', 0)
+            ->update(['is_read' => 1]);
 
         $query = $this->db->table('tb_chat_messages')
             ->where('session_id', $session->session_id);

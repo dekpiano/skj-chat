@@ -90,7 +90,18 @@
                             <tr>
                                 <td class="text-muted small"><?= $idx + 1 ?></td>
                                 <td>
-                                    <div class="fw-semibold text-dark text-truncate" style="max-width: 320px;" title="<?= esc($item->title) ?>"><?= esc($item->title) ?></div>
+                                    <?php
+                                        $catMatch = '';
+                                        if (preg_match('/^【หมวดหมู่:\s*([^】]+)】/u', $item->content ?? '', $mCat)) {
+                                            $catMatch = trim($mCat[1]);
+                                        }
+                                    ?>
+                                    <div class="d-flex align-items-center gap-1 flex-wrap mb-1">
+                                        <?php if ($catMatch): ?>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle small" style="font-size: 0.7rem;"><i class="fa-solid fa-folder me-1"></i><?= esc($catMatch) ?></span>
+                                        <?php endif; ?>
+                                        <span class="fw-semibold text-dark text-truncate" style="max-width: 300px;" title="<?= esc($item->title) ?>"><?= esc($item->title) ?></span>
+                                    </div>
                                     <?php if (!empty($item->source_url)): ?>
                                         <a href="<?= esc($item->source_url) ?>" target="_blank" class="small text-decoration-none text-muted d-inline-block text-truncate" style="max-width: 320px;" title="<?= esc($item->source_url) ?>">
                                             <i class="fa-solid fa-link me-1"></i><?= esc($item->source_url) ?>
@@ -100,7 +111,15 @@
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary-subtle text-secondary text-uppercase"><?= esc($item->source_type) ?></span>
+                                    <?php if ($item->source_type === 'chat'): ?>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fa-solid fa-comments me-1"></i>จากแชทสด</span>
+                                    <?php elseif ($item->source_type === 'url'): ?>
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle"><i class="fa-solid fa-globe me-1"></i>URL เว็บ</span>
+                                    <?php elseif ($item->source_type === 'file'): ?>
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="fa-solid fa-file-lines me-1"></i>เอกสาร</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"><i class="fa-solid fa-align-left me-1"></i>ข้อความ</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="small text-muted"><?= number_format($item->char_count) ?> ตัวอักษร</td>
                                 <td>
@@ -214,50 +233,71 @@
     function submitUrlForm(e) {
         e.preventDefault();
         const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (window.setButtonLoading) window.setButtonLoading(submitBtn, true, 'กำลังดึงข้อมูล...');
         const formData = new FormData(form);
 
         Swal.fire({ title: 'กำลังดึงข้อมูลเว็บไซต์...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         fetch(`${BASE_URL}/knowledge/save-url`, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
+                if (window.setButtonLoading) window.setButtonLoading(submitBtn, false);
                 if (data.status === 'success') {
                     Swal.fire('สำเร็จ', data.message, 'success').then(() => location.reload());
                 } else {
                     Swal.fire('เกิดข้อผิดพลาด', data.message, 'error');
                 }
+            })
+            .catch(() => {
+                if (window.setButtonLoading) window.setButtonLoading(submitBtn, false);
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
             });
     }
 
     function submitDocForm(e) {
         e.preventDefault();
         const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (window.setButtonLoading) window.setButtonLoading(submitBtn, true, 'กำลังอัปโหลด...');
         const formData = new FormData(form);
 
         Swal.fire({ title: 'กำลังอัปโหลดเอกสาร...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         fetch(`${BASE_URL}/knowledge/upload-file`, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
+                if (window.setButtonLoading) window.setButtonLoading(submitBtn, false);
                 if (data.status === 'success') {
                     Swal.fire('สำเร็จ', data.message, 'success').then(() => location.reload());
                 } else {
                     Swal.fire('เกิดข้อผิดพลาด', data.message, 'error');
                 }
+            })
+            .catch(() => {
+                if (window.setButtonLoading) window.setButtonLoading(submitBtn, false);
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
             });
     }
 
     function submitTextForm(e) {
         e.preventDefault();
         const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (window.setButtonLoading) window.setButtonLoading(submitBtn, true, 'กำลังบันทึก...');
         const formData = new FormData(form);
 
         fetch(`${BASE_URL}/knowledge/save-text`, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
+                if (window.setButtonLoading) window.setButtonLoading(submitBtn, false);
                 if (data.status === 'success') {
                     Swal.fire('สำเร็จ', data.message, 'success').then(() => location.reload());
                 } else {
                     Swal.fire('เกิดข้อผิดพลาด', data.message, 'error');
                 }
+            })
+            .catch(() => {
+                if (window.setButtonLoading) window.setButtonLoading(submitBtn, false);
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
             });
     }
 

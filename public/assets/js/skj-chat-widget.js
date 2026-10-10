@@ -697,50 +697,54 @@
         .skj-phone-pill {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            background: #e8f5e9;
-            color: #2e7d32 !important;
-            padding: 4px 10px;
+            gap: 6px;
+            background: #059669;
+            color: #ffffff !important;
+            padding: 4px 12px;
             border-radius: 20px;
-            font-weight: 600;
+            font-weight: 700;
             text-decoration: none !important;
             margin: 3px 0;
-            border: 1px solid #c8e6c9;
+            border: 1px solid #047857;
             font-size: 13px;
+            box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
             transition: all 0.2s;
             touch-action: manipulation;
         }
         .skj-phone-pill:hover, .skj-phone-pill:active {
-            background: #2e7d32;
+            background: #047857;
             color: #ffffff !important;
-            transform: scale(0.97);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(5, 150, 105, 0.35);
         }
         .skj-web-link {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            background: #e3f2fd;
-            color: #1565c0 !important;
-            padding: 4px 10px;
+            gap: 6px;
+            background: #2563eb;
+            color: #ffffff !important;
+            padding: 4px 12px;
             border-radius: 12px;
             font-weight: 600;
             text-decoration: none !important;
             margin: 3px 0;
-            border: 1px solid #bbdefb;
+            border: 1px solid #1d4ed8;
             font-size: 13px;
             word-break: break-word;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
             transition: all 0.2s;
             touch-action: manipulation;
         }
         .skj-web-link:hover, .skj-web-link:active {
-            background: #1565c0;
+            background: #1d4ed8;
             color: #ffffff !important;
-            transform: scale(0.97);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
         }
         .skj-msg-row.user .skj-web-link, .skj-msg-row.user .skj-phone-pill {
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.28);
             color: #ffffff !important;
-            border-color: rgba(255, 255, 255, 0.4);
+            border-color: rgba(255, 255, 255, 0.45);
         }
         .skj-list-item {
             margin: 2px 0;
@@ -770,10 +774,29 @@
             font-size: 10px;
             color: #94a3b8;
             margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
         .skj-msg-row.user .skj-msg-time {
-            text-align: right;
-            color: rgba(255, 255, 255, 0.8);
+            justify-content: flex-end;
+            color: rgba(255, 255, 255, 0.85);
+        }
+        .skj-read-receipt {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 9.5px;
+            padding: 1px 5px;
+            border-radius: 8px;
+        }
+        .skj-read-receipt.read {
+            color: #ffffff;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.22);
+        }
+        .skj-read-receipt.sent {
+            color: rgba(255, 255, 255, 0.75);
         }
 
         /* Typing Dots Animation */
@@ -800,6 +823,13 @@
         @keyframes skjBounce {
             0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
             40% { transform: scale(1.1); opacity: 1; }
+        }
+        @keyframes skjSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .skj-spin {
+            animation: skjSpin 0.75s linear infinite;
         }
 
         .skj-footer {
@@ -1248,19 +1278,18 @@
             .catch(err => console.error('SKJ Init error:', err));
     }
 
-    // Attach File Button
-    const attachBtn = document.getElementById('skjAttachBtn');
-    const fileInput = document.getElementById('skjWidgetFileInput');
-    attachBtn.addEventListener('click', () => fileInput.click());
-
-    fileInput.addEventListener('change', () => {
-        if (!fileInput.files || fileInput.files.length === 0) return;
-        const file = fileInput.files[0];
+    // Attach File Helper
+    function uploadWidgetFile(file) {
+        if (!file) return;
+        if (!currentToken) {
+            alert('กรุณารอระบบเริ่มต้นการสนทนาสักครู่...');
+            return;
+        }
 
         const formData = new FormData();
         formData.append('file', file);
 
-        showTypingIndicator('กำลังอัปโหลดไฟล์...');
+        showTypingIndicator('กำลังอัปโหลดไฟล์/รูปภาพ...');
 
         fetch(`${CHAT_SERVER}/api/widget/upload`, { method: 'POST', body: formData })
             .then(res => res.json())
@@ -1276,9 +1305,78 @@
                 hideTypingIndicator();
                 alert('เกิดข้อผิดพลาดในการอัปโหลดไฟล์');
             });
+    }
 
-        fileInput.value = '';
-    });
+    // Attach File Button
+    const attachBtn = document.getElementById('skjAttachBtn');
+    const fileInput = document.getElementById('skjWidgetFileInput');
+    if (attachBtn && fileInput) {
+        attachBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', () => {
+            if (!fileInput.files || fileInput.files.length === 0) return;
+            uploadWidgetFile(fileInput.files[0]);
+            fileInput.value = '';
+        });
+    }
+
+    // Clipboard Paste Image (Ctrl+V) on Widget Input
+    const widgetMsgInput = document.getElementById('skjMessageInput');
+    const widgetChatWindow = document.getElementById('skjChatWindow');
+
+    const handleWidgetPaste = (e) => {
+        const clipboardData = e.clipboardData || window.clipboardData;
+        if (!clipboardData || !clipboardData.items) return;
+
+        const items = clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.type && item.type.indexOf('image') !== -1) {
+                e.preventDefault();
+                const blob = item.getAsFile();
+                if (blob) {
+                    const now = new Date();
+                    const timestamp = now.getFullYear() +
+                        String(now.getMonth() + 1).padStart(2, '0') +
+                        String(now.getDate()).padStart(2, '0') + '_' +
+                        String(now.getHours()).padStart(2, '0') +
+                        String(now.getMinutes()).padStart(2, '0') +
+                        String(now.getSeconds()).padStart(2, '0');
+                    const ext = (item.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+                    const file = new File([blob], `screenshot_${timestamp}.${ext}`, { type: blob.type });
+                    uploadWidgetFile(file);
+                    break;
+                }
+            }
+        }
+    };
+
+    if (widgetMsgInput) {
+        widgetMsgInput.addEventListener('paste', handleWidgetPaste);
+    }
+
+    // Drag & Drop File Upload on Widget
+    if (widgetChatWindow) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            widgetChatWindow.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            widgetChatWindow.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        widgetChatWindow.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0) {
+                uploadWidgetFile(dt.files[0]);
+            }
+        }, false);
+    }
 
     // Send Message
     let isSending = false;
@@ -1318,11 +1416,23 @@
             formData.append('attachment_type', attachmentType);
         }
 
+        const sendBtn = document.getElementById('skjSendBtn');
+        if (sendBtn) {
+            sendBtn.disabled = true;
+            sendBtn.style.opacity = '0.75';
+            sendBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="skj-spin"><circle cx="12" cy="12" r="9" stroke-dasharray="32" stroke-dashoffset="12"/></svg>';
+        }
+
         fetch(`${CHAT_SERVER}/api/widget/send`, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 isSending = false;
                 hideTypingIndicator();
+                if (sendBtn) {
+                    sendBtn.disabled = false;
+                    sendBtn.style.opacity = '1';
+                    sendBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
+                }
                 if (data.status === 'success') {
                     // Update renderedMsgIds & lastMsgId with the saved user message
                     if (data.message && data.message.message_id) {
@@ -1354,6 +1464,11 @@
             .catch(() => {
                 isSending = false;
                 hideTypingIndicator();
+                if (sendBtn) {
+                    sendBtn.disabled = false;
+                    sendBtn.style.opacity = '1';
+                    sendBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
+                }
             });
     }
 
@@ -1412,6 +1527,11 @@
                 pendingBubble.setAttribute('data-message-id', mid);
                 renderedMsgIds.add(mid);
                 if (mid > lastMsgId) lastMsgId = mid;
+                const statusEl = pendingBubble.querySelector('.skj-read-receipt');
+                if (statusEl && m.is_read == 1) {
+                    statusEl.className = 'skj-read-receipt read';
+                    statusEl.innerHTML = '<svg style="width:11px;height:11px;display:inline-block;vertical-align:-1px;margin-right:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline><polyline points="20 12 12 20"></polyline></svg> อ่านแล้ว';
+                }
                 return pendingBubble;
             }
         }
@@ -1436,7 +1556,14 @@
             row.setAttribute('data-message-id', mid);
         }
 
-        let senderTitle = isUser ? 'คุณ' : (isBot ? '🌸 น้องกุหลาบ (SKJ AI)' : (m.sender_name || 'เจ้าหน้าที่'));
+        let senderTitle = '';
+        if (isUser) {
+            senderTitle = '👤 คุณ';
+        } else if (isBot) {
+            senderTitle = '🌸 น้องกุหลาบ (SKJ AI)';
+        } else {
+            senderTitle = `👤 ${escapeHtml(m.sender_name || 'เจ้าหน้าที่โรงเรียน')}`;
+        }
 
         let attachmentHtml = '';
         if (m.attachment_url) {
@@ -1449,12 +1576,24 @@
 
         const parsedContent = parseMarkdown(m.message || '');
 
+        let readStatusHtml = '';
+        if (isUser) {
+            if (parseInt(m.is_read, 10) === 1) {
+                readStatusHtml = `<span class="skj-read-receipt read" title="เจ้าหน้าที่/AI อ่านแล้ว"><svg style="width:11px;height:11px;display:inline-block;vertical-align:-1px;margin-right:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline><polyline points="20 12 12 20"></polyline></svg> อ่านแล้ว</span>`;
+            } else {
+                readStatusHtml = `<span class="skj-read-receipt sent" title="ส่งถึงระบบแล้ว"><svg style="width:10px;height:10px;display:inline-block;vertical-align:-1px;margin-right:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> ส่งแล้ว</span>`;
+            }
+        }
+
         row.innerHTML = `
             <div class="skj-msg-bubble">
-                <div class="skj-msg-sender">${escapeHtml(senderTitle)}</div>
+                <div class="skj-msg-sender">${senderTitle}</div>
                 <div>${parsedContent}</div>
                 ${attachmentHtml}
-                <div class="skj-msg-time">${formatTime(m.created_at)}</div>
+                <div class="skj-msg-time">
+                    <span>${formatTime(m.created_at)}</span>
+                    ${readStatusHtml}
+                </div>
             </div>
         `;
 

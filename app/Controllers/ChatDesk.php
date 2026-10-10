@@ -6,6 +6,7 @@ use App\Models\ChatSessionModel;
 use App\Models\ChatMessageModel;
 use App\Models\AgentModel;
 use App\Models\CannedReplyModel;
+use App\Models\KnowledgeModel;
 
 class ChatDesk extends BaseController
 {
@@ -408,6 +409,302 @@ class ChatDesk extends BaseController
         return $this->response->setJSON([
             'status'        => 'success',
             'online_status' => $status
+        ]);
+    }
+
+    private function doExtractKnowledgeFromSession($sessionId)
+    {
+        $session = $this->db->table('tb_chat_sessions')->where('session_id', $sessionId)->get()->getRow();
+        if (!$session) {
+            return ['status' => 'error', 'message' => 'ไม่พบข้อมูลการสนทนา'];
+        }
+
+        $messages = $this->db->table('tb_chat_messages')
+            ->where('session_id', $sessionId)
+            ->orderBy('created_at', 'ASC')
+            ->get()
+            ->getResult();
+
+        if (empty($messages) || count($messages) < 2) {
+            return ['status' => 'error', 'message' => 'บทสนทนามีข้อความน้อยเกินไปสำหรับการสกัดความรู้ (ต้องมีอย่างน้อย 2 ข้อความ)'];
+        }
+
+        $dialogue = "";
+        foreach ($messages as $m) {
+            $sender = ($m->sender_type === 'user') ? 'ผู้ปกครอง/นักเรียน' : (($m->sender_type === 'bot') ? 'น้องกุหลาบ AI' : 'เจ้าหน้าที่/ครู');
+            $msg = trim($m->message ?? '');
+            if (!empty($msg)) {
+                $dialogue .= "[{$sender}]: {$msg}\n";
+            }
+        }
+
+        if (empty(trim($dialogue))) {
+            return ['status' => 'error', 'message' => 'ไม่มีข้อความตัวอักษรในบทสนทนา'];
+        }
+
+        $aiConfig = $this->db->table('tb_chat_ai_config')->where('ai_id', 1)->get()->getRow();
+        if (!$aiConfig || empty($aiConfig->ai_api_key)) {
+            return ['status' => 'error', 'message' => 'ยังไม่ได้ตั้งค่า Google Gemini API Key ในระบบ'];
+        }
+
+        $systemPrompt = "คุณคือนักจัดการความรู้อาวุโสของโรงเรียนสวนกุหลาบวิทยาลัย (จิรประวัติ) นครสวรรค์ หน้าที่ของคุณคือวิเคราะห์บทสนทนาที่เกิดขึ้นจริงระหว่างผู้ปกครอง/นักเรียน กับครูหรือเจ้าหน้าที่ แล้วสกัด 'สาระสำคัญและองค์ความรู้ที่ถูกต้อง' เพื่อบันทึกลงในคลังความรู้ AI (RAG Knowledge Base)\n\n"
+            . "กรุณาตอบเป็นรูปแบบ JSON Object เท่านั้น (ห้ามมี Markdown Backticks หรือข้อความอื่นนอก JSON) โดยมีโครงสร้างดังนี้:\n"
+            . "{\n"
+            . "  \"title\": \"หัวข้อเรื่องที่กระชับ ตรงประเด็น ชัดเจน (เช่น ขั้นตอนการขอใบรับรองผลการเรียน ปพ.1, กำหนดการมอบตัวนักเรียน ม.1 และ ม.4)\",\n"
+            . "  \"category\": \"วิเคราะห์และกำหนดชื่อหมวดหมู่งานที่ตรงกับเนื้อหาโดยอัตโนมัติ (เช่น การรับสมัครนักเรียน, งานวิชาการและตารางสอบ, ทุนการศึกษาและสวัสดิการ, งานทะเบียนและเอกสาร ปพ., กิจกรรมพัฒนาผู้เรียน, การเงินและค่าบำรุงการศึกษา, การแนะแนวและศึกษาต่อ, อาคารสถานที่และหอพัก, ข้อมูลทั่วไปและการติดต่อ หรือสร้างชื่อหมวดหมู่ใหม่ที่กระชับและตรงกับบริบทที่สุด)\",\n"
+            . "  \"summary\": \"เนื้อหาความรู้อย่างละเอียด สรุปสาระสำคัญ คำถามและคำตอบที่ถูกต้อง ครบถ้วน สละสลวย อ่านง่าย ไพเราะ พร้อมข้อกำหนด ขั้นตอน หรือเบอร์โทรติดต่อถ้ามี\",\n"
+            . "  \"keywords\": \"คำค้นหาหลักที่เกี่ยวข้อง 3-6 คำ คั่นด้วยจุลภาค\"\n"
+            . "}";
+
+        $userPrompt = "บทสนทนาที่ต้องการให้สกัดความรู้:\n\n" . $dialogue;
+
+        $primaryModel = $aiConfig->ai_model ?: 'gemini-3.5-flash';
+        $modelsToTry = array_values(array_unique(array_filter([
+            $primaryModel,
+            'gemini-3.5-flash',
+            'gemini-3.5-flash-lite',
+            'gemini-flash-latest',
+            'gemini-3.1-flash-lite'
+        ])));
+
+        $client = \Config\Services::curlrequest();
+        $extractedData = null;
+
+        foreach ($modelsToTry as $modelName) {
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key=" . $aiConfig->ai_api_key;
+
+            try {
+                $res = $client->post($url, [
+                    'json' => [
+                        'systemInstruction' => [
+                            'parts' => [['text' => $systemPrompt]]
+                        ],
+                        'contents' => [
+                            [
+                                'role'  => 'user',
+                                'parts' => [['text' => $userPrompt]]
+                            ]
+                        ],
+                        'generationConfig' => [
+                            'temperature'       => 0.2,
+                            'maxOutputTokens'   => 1500,
+                            'responseMimeType'  => 'application/json'
+                        ]
+                    ],
+                    'http_errors' => false,
+                    'timeout'     => 20
+                ]);
+
+                $result = json_decode($res->getBody(), true);
+                if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
+                    $jsonText = trim($result['candidates'][0]['content']['parts'][0]['text']);
+                    $jsonText = preg_replace('/^```(?:json)?\s*/i', '', $jsonText);
+                    $jsonText = preg_replace('/\s*```$/', '', $jsonText);
+                    $parsed = json_decode($jsonText, true);
+                    if ($parsed && !empty($parsed['title']) && !empty($parsed['summary'])) {
+                        $extractedData = $parsed;
+                        break;
+                    }
+                }
+            } catch (\Exception $e) {}
+        }
+
+        if (!$extractedData) {
+            return ['status' => 'error', 'message' => 'ไม่สามารถสกัดความรู้ด้วย AI ได้ กรุณาลองใหม่อีกครั้ง'];
+        }
+
+        return [
+            'status'  => 'success',
+            'data'    => $extractedData,
+            'session' => $session
+        ];
+    }
+
+    public function previewKnowledge($sessionId)
+    {
+        if ($redir = $this->checkAuth()) return $redir;
+
+        $res = $this->doExtractKnowledgeFromSession($sessionId);
+        if ($res['status'] !== 'success') {
+            return $this->response->setJSON($res);
+        }
+
+        return $this->response->setJSON([
+            'status'   => 'success',
+            'title'    => trim($res['data']['title']),
+            'category' => trim($res['data']['category'] ?? 'ทั่วไป'),
+            'summary'  => trim($res['data']['summary']),
+            'keywords' => trim($res['data']['keywords'] ?? '')
+        ]);
+    }
+
+    public function saveExtractedKnowledge()
+    {
+        if ($redir = $this->checkAuth()) return $redir;
+
+        $sessionId = (int)$this->request->getPost('session_id');
+        $title     = trim($this->request->getPost('title') ?? '');
+        $category  = trim($this->request->getPost('category') ?? 'ทั่วไป');
+        $summary   = trim($this->request->getPost('summary') ?? '');
+        $keywords  = trim($this->request->getPost('keywords') ?? '');
+        $autoClose = (int)$this->request->getPost('auto_close');
+
+        if (empty($title) || empty($summary)) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'กรุณาระบุหัวข้อและเนื้อหาความรู้']);
+        }
+
+        $session = $this->db->table('tb_chat_sessions')->where('session_id', $sessionId)->get()->getRow();
+        $sourceUrl = $session ? base_url("chat/desk?session={$session->session_token}") : '';
+
+        $content = "【หมวดหมู่: {$category}】\n{$summary}\n\nคำสำคัญ: {$keywords}\n(สกัดความรู้อัตโนมัติจากบทสนทนาจริง รหัสเซสชัน #{$sessionId} เมื่อ " . date('d/m/Y H:i') . ")";
+
+        $knowledgeModel = new KnowledgeModel();
+        $insertId = $knowledgeModel->insert([
+            'title'       => "【แชท】" . $title,
+            'source_type' => 'chat',
+            'source_url'  => $sourceUrl,
+            'content'     => $content,
+            'char_count'  => mb_strlen($content),
+            'status'      => 'on'
+        ]);
+
+        if ($autoClose === 1 && $session && $session->status === 'active') {
+            $this->db->table('tb_chat_sessions')->where('session_id', $sessionId)->update([
+                'status'     => 'closed',
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status'       => 'success',
+            'knowledge_id' => $insertId,
+            'title'        => $title,
+            'message'      => 'บันทึกเข้าคลังความรู้ AI เรียบร้อยแล้ว' . ($autoClose === 1 ? ' พร้อมปิดการสนทนา' : '')
+        ]);
+    }
+
+    public function extractKnowledge($sessionId)
+    {
+        if ($redir = $this->checkAuth()) return $redir;
+
+        $res = $this->doExtractKnowledgeFromSession($sessionId);
+        if ($res['status'] !== 'success') {
+            return $this->response->setJSON($res);
+        }
+
+        $session = $res['session'];
+        $title = trim($res['data']['title']);
+        $category = trim($res['data']['category'] ?? 'ทั่วไป');
+        $summary = trim($res['data']['summary']);
+        $keywords = trim($res['data']['keywords'] ?? '');
+
+        $content = "【หมวดหมู่: {$category}】\n{$summary}\n\nคำสำคัญ: {$keywords}\n(สกัดความรู้อัตโนมัติจากบทสนทนาจริง รหัสเซสชัน #{$sessionId} เมื่อ " . date('d/m/Y H:i') . ")";
+
+        $knowledgeModel = new KnowledgeModel();
+        $insertId = $knowledgeModel->insert([
+            'title'       => "【แชท】" . $title,
+            'source_type' => 'chat',
+            'source_url'  => base_url("chat/desk?session={$session->session_token}"),
+            'content'     => $content,
+            'char_count'  => mb_strlen($content),
+            'status'      => 'on'
+        ]);
+
+        return $this->response->setJSON([
+            'status'       => 'success',
+            'knowledge_id' => $insertId,
+            'title'        => $title,
+            'category'     => $category,
+            'summary'      => $summary,
+            'message'      => 'บันทึกเข้าคลังความรู้ AI เรียบร้อยแล้ว'
+        ]);
+    }
+
+    public function deleteSession($sessionId)
+    {
+        if ($redir = $this->checkAuth()) return $redir;
+
+        $session = $this->db->table('tb_chat_sessions')->where('session_id', $sessionId)->get()->getRow();
+        if (!$session) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'ไม่พบข้อมูลการสนทนา']);
+        }
+
+        // Delete associated files
+        $messagesWithFiles = $this->db->table('tb_chat_messages')
+            ->where('session_id', $sessionId)
+            ->where('attachment_url IS NOT NULL')
+            ->get()
+            ->getResult();
+
+        foreach ($messagesWithFiles as $m) {
+            if (!empty($m->attachment_url)) {
+                $filename = basename($m->attachment_url);
+                $filePath = FCPATH . 'uploads/chat/' . $filename;
+                if (file_exists($filePath)) {
+                    @unlink($filePath);
+                }
+            }
+        }
+
+        // Delete messages & session
+        $this->db->table('tb_chat_messages')->where('session_id', $sessionId)->delete();
+        $this->db->table('tb_chat_sessions')->where('session_id', $sessionId)->delete();
+
+        return $this->response->setJSON([
+            'status'  => 'success',
+            'message' => 'ลบประวัติการสนทนาและไฟล์แนบทั้งหมดเรียบร้อยแล้ว'
+        ]);
+    }
+
+    public function cleanupHistory()
+    {
+        if ($redir = $this->checkAuth()) return $redir;
+
+        $days = (int)($this->request->getPost('days') ?? 90);
+        $type = $this->request->getPost('type') ?? 'all'; // all, attachments_only
+
+        if ($days < 7) $days = 7;
+        $cutoffDate = date('Y-m-d H:i:s', strtotime("-{$days} days"));
+
+        $closedSessions = $this->db->table('tb_chat_sessions')
+            ->where('status', 'closed')
+            ->where('updated_at <', $cutoffDate)
+            ->get()
+            ->getResult();
+
+        $deletedSessionsCount = 0;
+        $deletedFilesCount = 0;
+
+        foreach ($closedSessions as $s) {
+            $files = $this->db->table('tb_chat_messages')
+                ->where('session_id', $s->session_id)
+                ->where('attachment_url IS NOT NULL')
+                ->get()
+                ->getResult();
+
+            foreach ($files as $f) {
+                if (!empty($f->attachment_url)) {
+                    $filename = basename($f->attachment_url);
+                    $filePath = FCPATH . 'uploads/chat/' . $filename;
+                    if (file_exists($filePath)) {
+                        @unlink($filePath);
+                        $deletedFilesCount++;
+                    }
+                }
+            }
+
+            if ($type === 'all') {
+                $this->db->table('tb_chat_messages')->where('session_id', $s->session_id)->delete();
+                $this->db->table('tb_chat_sessions')->where('session_id', $s->session_id)->delete();
+                $deletedSessionsCount++;
+            }
+        }
+
+        return $this->response->setJSON([
+            'status'           => 'success',
+            'deleted_sessions' => $deletedSessionsCount,
+            'deleted_files'    => $deletedFilesCount,
+            'message'          => "ล้างข้อมูลที่เก่ากว่า {$days} วันเรียบร้อยแล้ว (ลบ {$deletedSessionsCount} การสนทนา, {$deletedFilesCount} ไฟล์)"
         ]);
     }
 }

@@ -111,16 +111,23 @@
     function submitCannedForm(e) {
         e.preventDefault();
         const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (window.setButtonLoading) window.setButtonLoading(submitBtn, true, 'กำลังบันทึก...');
         const formData = new FormData(form);
 
         fetch(`${BASE_URL}/canned/save`, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
+                if (window.setButtonLoading) window.setButtonLoading(submitBtn, false);
                 if (data.status === 'success') {
                     Swal.fire('สำเร็จ', data.message, 'success').then(() => location.reload());
                 } else {
                     Swal.fire('ผิดพลาด', data.message, 'error');
                 }
+            })
+            .catch(() => {
+                if (window.setButtonLoading) window.setButtonLoading(submitBtn, false);
+                Swal.fire('ผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
             });
     }
 
